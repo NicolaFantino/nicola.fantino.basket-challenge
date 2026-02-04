@@ -13,6 +13,9 @@ public class ThrowBallDeterministic : MonoBehaviour
     private Vector2 swipeStartPos;
     private bool isSwiping = false;
 
+    [Header("UI References")]
+    [SerializeField] private PowerBarUI powerBarUI;
+
     [Header("Throw Settings")]
     [SerializeField] private float maxSwipeDuration = 0.8f;
 
@@ -41,6 +44,7 @@ public class ThrowBallDeterministic : MonoBehaviour
 
     private bool isLaunched = false;
     private bool pendingBankAssist = false;
+    private float currentMaxPower = 0f;
     private Coroutine autoResetCoroutine;
     private Vector3 finalTarget;
 
@@ -56,12 +60,17 @@ public class ThrowBallDeterministic : MonoBehaviour
         initialBallRotation = transform.rotation;
     }
 
+    private void Start() {
+        powerBarUI.SetupZones(perfectThresholdMin, perfectThresholdMax, bankThresholdMin, bankThresholdMax);
+    }
+
     private void OnEnable() => controls.Enable();
     private void OnDisable() => controls.Disable();
 
     private void StartSwipe() {
         if (isLaunched || isSwiping) return;
         isSwiping = true;
+        currentMaxPower = 0f; // Reset per il nuovo tiro
         swipeStartPos = controls.Gameplay.Point.ReadValue<Vector2>();
         swipeTimerCoroutine = StartCoroutine(SwipeTimer());
     }
@@ -81,14 +90,25 @@ public class ThrowBallDeterministic : MonoBehaviour
         }
     }
 
+    private float GetCurrentPower() {
+        Vector2 currentSwipePos = controls.Gameplay.Point.ReadValue<Vector2>();
+
+        // Calcoliamo la distanza attuale
+        float swipeDistance = (currentSwipePos.y - swipeStartPos.y) / Screen.height;
+        float calculatedPower = Mathf.Clamp01(swipeDistance / screenRangeMaxPower);
+
+        // Aggiorniamo la potenza massima solo se il nuovo valore è maggiore
+        if (calculatedPower > currentMaxPower) {
+            currentMaxPower = calculatedPower;
+        }
+
+        return currentMaxPower;
+    }
+
     private void Launch() {
         isSwiping = false;
 
-        Vector2 currentSwipePos = controls.Gameplay.Point.ReadValue<Vector2>();
-        float swipeDistance = (currentSwipePos.y - swipeStartPos.y) / Screen.height;
-
-        // Limita il valore tra 0 e 1 (rappresenta il riempimento della barra)
-        float power = Mathf.Clamp01(swipeDistance / screenRangeMaxPower);
+        float power = GetCurrentPower();
         Debug.Log($"Swipe Power: {power}");
 
         if (power < 0.1f) {
@@ -199,6 +219,16 @@ public class ThrowBallDeterministic : MonoBehaviour
     // --- LOGICA DI RESET (Invariata o quasi) ---
 
     private void Update() {
+
+        if (isSwiping) {
+            float power = GetCurrentPower();
+
+            // 3. AGGIORNI LA UI
+            if (powerBarUI != null) {
+                powerBarUI.UpdateUI(power);
+            }
+        }
+
         if (isLaunched && transform.position.y <= yResetThreshold) {
             ResetBall();
         }
@@ -229,6 +259,10 @@ public class ThrowBallDeterministic : MonoBehaviour
         rb.angularVelocity = Vector3.zero;
         transform.localPosition = initialBallLocalPosition;
         transform.rotation = initialBallRotation;
+
+        if (powerBarUI != null) {
+            powerBarUI.ResetUI();
+        }
     }
 
     private void OnDrawGizmos() {
