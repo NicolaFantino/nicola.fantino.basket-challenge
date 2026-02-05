@@ -42,6 +42,9 @@ public class ThrowBallDeterministic : MonoBehaviour
     [SerializeField] private bool showDebugArcs = true;
     [SerializeField] private int arcResolution = 20; // Quanti segmenti compongono la linea
 
+    [Header("Test References")]
+    [SerializeField] private PlayerPositioner playerPositioner;
+
     private bool isLaunched = false;
     private bool pendingBankAssist = false;
     private float currentMaxPower = 0f;
@@ -259,6 +262,13 @@ public class ThrowBallDeterministic : MonoBehaviour
         rb.angularVelocity = Vector3.zero;
         transform.localPosition = initialBallLocalPosition;
         transform.rotation = initialBallRotation;
+
+        // --- NUOVA LOGICA DI TEST ---
+        if (playerPositioner != null) {
+            // Spostiamo il padre della palla (il Player) nella nuova posizione casuale
+            playerPositioner.MovePlayerToRandomPosition(transform.parent);
+        }
+        // ----------------------------
 
         if (powerBarUI != null) {
             powerBarUI.ResetUI();

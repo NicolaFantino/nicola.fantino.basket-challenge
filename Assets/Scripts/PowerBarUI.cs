@@ -24,7 +24,7 @@ public class PowerBarUI : MonoBehaviour {
 
     public void SetupZones(float perferctMin, float perfectMax, float bankMin, float bankMax) {
         // Se non è stato ancora assegnato in Awake
-        if (totalHeight <= 0) totalHeight = sliderRect.rect.height;
+        if (totalHeight <= 0) totalHeight = sliderRect.rect.width;
 
         // Posizioniamo i segmenti
         PositionSegment(bankRect, bankMin, bankMax);
