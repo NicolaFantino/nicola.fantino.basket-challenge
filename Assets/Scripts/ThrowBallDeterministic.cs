@@ -4,8 +4,10 @@ using UnityEngine;
 
 public class ThrowBallDeterministic : MonoBehaviour
 {
+    [Header("Ball Reference")]
+    [SerializeField] private Rigidbody ballRb;
+
     private PlayerControls controls;
-    private Rigidbody rb;
     private Coroutine swipeTimerCoroutine;
     private Vector3 initialBallLocalPosition;
     private Quaternion initialBallRotation;
@@ -36,31 +38,30 @@ public class ThrowBallDeterministic : MonoBehaviour
 
     [Header("Reset Settings")]
     [SerializeField] private float yResetThreshold = -1f;
-    [SerializeField] private float maxLifeTime = 5f;
+    //[SerializeField] private float maxLifeTime = 5f;
 
     [Header("Debug Settings")]
     [SerializeField] private bool showDebugArcs = true;
     [SerializeField] private int arcResolution = 20; // Quanti segmenti compongono la linea
 
     [Header("Test References")]
-    [SerializeField] private PlayerPositioner playerPositioner;
+    //[SerializeField] private PlayerPositioner playerPositioner;
 
     private bool isLaunched = false;
     private bool pendingBankAssist = false;
     private float currentMaxPower = 0f;
-    private Coroutine autoResetCoroutine;
+    //private Coroutine autoResetCoroutine;
     private Vector3 finalTarget;
 
     private void Awake() {
-        rb = GetComponent<Rigidbody>();
-        rb.isKinematic = true;
+        ballRb.isKinematic = true;
         controls = new PlayerControls();
 
         controls.Gameplay.Click.started += ctx => StartSwipe();
         controls.Gameplay.Click.canceled += ctx => EndSwipe();
 
-        initialBallLocalPosition = transform.localPosition;
-        initialBallRotation = transform.rotation;
+        initialBallLocalPosition = ballRb.transform.localPosition;
+        initialBallRotation = ballRb.transform.rotation;
     }
 
     private void Start() {
@@ -160,17 +161,18 @@ public class ThrowBallDeterministic : MonoBehaviour
     }
 
     private void ThrowTowardsTarget(Vector3 target) {
-        rb.isKinematic = false;
+        ballRb.isKinematic = false;
 
         // Calcolo della velocità iniziale necessaria per colpire il target in 'timeOfFlight' secondi
-        Vector3 velocity = CalculateVelocity(target, transform.position, timeOfFlight);
+        Vector3 velocity = CalculateVelocity(target, ballRb.transform.position, timeOfFlight);
 
-        rb.velocity = velocity;
+        ballRb.velocity = velocity;
 
         // Rotazione palla (estetica)
-        rb.AddTorque(transform.right * 5f, ForceMode.Impulse);
+        ballRb.AddTorque(ballRb.transform.right * 5f, ForceMode.Impulse);
 
-        OnBallLaunched();
+        isLaunched = true;
+        //OnBallLaunched();
     }
 
     private Vector3 CalculateVelocity(Vector3 target, Vector3 origin, float time) {
@@ -200,20 +202,20 @@ public class ThrowBallDeterministic : MonoBehaviour
 
             // 1. Reset totale della palla
             // Fermiamo sia il movimento lineare che la rotazione caotica dell'impatto
-            rb.velocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            ballRb.velocity = Vector3.zero;
+            ballRb.angularVelocity = Vector3.zero;
 
             // Calcoliamo una nuova velocità per andare dal punto di impatto al canestro
             // Usiamo un tempo di volo molto breve per il rimbalzo (es. 0.4 secondi)
             float bounceTime = 0.4f;
-            Vector3 assistVelocity = CalculateVelocity(hoopTarget.position, transform.position, bounceTime);
+            Vector3 assistVelocity = CalculateVelocity(hoopTarget.position, ballRb.transform.position, bounceTime);
 
             // Applichiamo la nuova velocità "corretta"
-            rb.velocity = assistVelocity;
+            ballRb.velocity = assistVelocity;
 
             // 4. (Opzionale) Aggiungiamo un leggero backspin estetico
             // Questo rende il canestro visivamente più gratificante
-            rb.AddTorque(transform.right * 2f, ForceMode.Impulse);
+            ballRb.AddTorque(ballRb.transform.right * 2f, ForceMode.Impulse);
 
             Debug.Log("Bank Assist Attivato: Palla diretta al canestro!");
         }
@@ -232,43 +234,43 @@ public class ThrowBallDeterministic : MonoBehaviour
             }
         }
 
-        if (isLaunched && transform.position.y <= yResetThreshold) {
+        if (isLaunched && ballRb.transform.position.y <= yResetThreshold) {
             ResetBall();
+            GameManager.Instance.OnShotFinished(this);
         }
     }
 
     private void ResetBallState() {
-        rb.isKinematic = true;
+        ballRb.isKinematic = true;
         isSwiping = false;
     }
 
-    public void OnBallLaunched() {
+    /*public void OnBallLaunched() {
         isLaunched = true;
         if (autoResetCoroutine != null) StopCoroutine(autoResetCoroutine);
         autoResetCoroutine = StartCoroutine(ResetTimer());
-    }
+    }*/
 
-    private IEnumerator ResetTimer() {
+    /*private IEnumerator ResetTimer() {
         yield return new WaitForSeconds(maxLifeTime);
         if (isLaunched) ResetBall();
-    }
+    }*/
 
     public void ResetBall() {
-        if (autoResetCoroutine != null) StopCoroutine(autoResetCoroutine);
+        //if (autoResetCoroutine != null) StopCoroutine(autoResetCoroutine);
         isLaunched = false;
-        isSwiping = false;
-        rb.isKinematic = true;
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
-        transform.localPosition = initialBallLocalPosition;
-        transform.rotation = initialBallRotation;
+        ResetBallState();
+        ballRb.velocity = Vector3.zero;
+        ballRb.angularVelocity = Vector3.zero;
+        ballRb.transform.localPosition = initialBallLocalPosition;
+        ballRb.transform.rotation = initialBallRotation;
 
-        // --- NUOVA LOGICA DI TEST ---
+        /* --- LOGICA DI TEST ---
         if (playerPositioner != null) {
-            // Spostiamo il padre della palla (il Player) nella nuova posizione casuale
-            playerPositioner.MovePlayerToRandomPosition(transform.parent);
+            // Spostiamo il Player nella nuova posizione casuale
+            playerPositioner.MovePlayerToRandomPosition(transform);
         }
-        // ----------------------------
+        */
 
         if (powerBarUI != null) {
             powerBarUI.ResetUI();
@@ -296,17 +298,17 @@ public class ThrowBallDeterministic : MonoBehaviour
 
     private void DrawTrajectoryArc(Vector3 target, Color color) {
         Gizmos.color = color;
-        Vector3 lastPoint = transform.position;
+        Vector3 lastPoint = ballRb.transform.position;
 
         // Calcoliamo la velocità iniziale che userebbe il sistema
-        Vector3 velocity = CalculateVelocity(target, transform.position, timeOfFlight);
+        Vector3 velocity = CalculateVelocity(target, ballRb.transform.position, timeOfFlight);
 
         for (int i = 1; i <= arcResolution; i++) {
             // Calcola il tempo trascorso per questo segmento
             float t = (i / (float)arcResolution) * timeOfFlight;
 
             // Formula del moto uniformemente accelerato: P = P0 + V0*t + 0.5*g*t^2
-            Vector3 nextPoint = transform.position + velocity * t + 0.5f * Physics.gravity * Mathf.Pow(t, 2);
+            Vector3 nextPoint = ballRb.transform.position + velocity * t + 0.5f * Physics.gravity * Mathf.Pow(t, 2);
 
             Gizmos.DrawLine(lastPoint, nextPoint);
             lastPoint = nextPoint;
