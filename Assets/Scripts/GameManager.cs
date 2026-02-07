@@ -60,18 +60,27 @@ public class GameManager : MonoBehaviour {
         }
     }
 
+    // 1. Metodo per assegnare SOLO i punti (chiamato dal sensore)
+    public void AwardPoints(Player shooter, bool perfectShot) {
+        if (!isMatchActive) return;
+
+        int points = perfectShot ? 3 : 2;
+        shooter.AddScore(points);
+        Debug.Log($"{shooter.Name} ha segnato! Totale: {shooter.Score}");
+    }
+
     // Chiamato da ThrowBallDeterministic.cs
-    public void OnShotFinished(ThrowBallDeterministic ballPlayer) {
+    public void OnShotFinished(Player player) {
         // Se la partita è finita, non cambiamo più le posizioni
         if (!isMatchActive) return;
 
         // Cerchiamo il giocatore che possiede questa palla
        //Player shooter = players.Find(p => p.BallScript == ball);
 
-        if (ballPlayer != null) {
+        if (player != null) {
             // 1. Spostiamo solo il giocatore interessato
             if (positioner != null) {
-                positioner.MovePlayerToRandomPosition(ballPlayer.transform);
+                positioner.MovePlayerToRandomPosition(player.transform);
             }
 
             // 2. Resettiamo la palla

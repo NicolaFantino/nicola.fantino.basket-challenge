@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class ThrowBallDeterministic : MonoBehaviour
 {
-    [Header("Ball Reference")]
-    [SerializeField] private Rigidbody ballRb;
-
+    
+    private Rigidbody ballRb;
+    private Player myPlayer;
     private PlayerControls controls;
     private Coroutine swipeTimerCoroutine;
     private Vector3 initialBallLocalPosition;
@@ -52,16 +52,22 @@ public class ThrowBallDeterministic : MonoBehaviour
     private float currentMaxPower = 0f;
     //private Coroutine autoResetCoroutine;
     private Vector3 finalTarget;
+    private bool perfectShot;
+    private bool passedTopTrigger = false;
 
     private void Awake() {
+        myPlayer = this.GetComponentInParent<Player>();
+        if (myPlayer == null) Debug.LogError($"Palla {gameObject.name} non ha un componente Player nei genitori!");
+
+        ballRb = GetComponent<Rigidbody>();
         ballRb.isKinematic = true;
         controls = new PlayerControls();
 
         controls.Gameplay.Click.started += ctx => StartSwipe();
         controls.Gameplay.Click.canceled += ctx => EndSwipe();
 
-        initialBallLocalPosition = ballRb.transform.localPosition;
-        initialBallRotation = ballRb.transform.rotation;
+        initialBallLocalPosition = transform.localPosition;
+        initialBallRotation = transform.rotation;
     }
 
     private void Start() {
@@ -124,6 +130,7 @@ public class ThrowBallDeterministic : MonoBehaviour
         if (power >= perfectThresholdMin && power <= perfectThresholdMax) {
             // TIRO PERFETTO
             finalTarget = hoopTarget.position;
+            perfectShot = true;
             Debug.Log("PERFECT SHOT!");
         } else if (power >= bankThresholdMin && power <= bankThresholdMax) {
             // TIRO DI TABELLONE
@@ -164,12 +171,12 @@ public class ThrowBallDeterministic : MonoBehaviour
         ballRb.isKinematic = false;
 
         // Calcolo della velocità iniziale necessaria per colpire il target in 'timeOfFlight' secondi
-        Vector3 velocity = CalculateVelocity(target, ballRb.transform.position, timeOfFlight);
+        Vector3 velocity = CalculateVelocity(target, transform.position, timeOfFlight);
 
         ballRb.velocity = velocity;
 
         // Rotazione palla (estetica)
-        ballRb.AddTorque(ballRb.transform.right * 5f, ForceMode.Impulse);
+        ballRb.AddTorque(transform.right * 5f, ForceMode.Impulse);
 
         isLaunched = true;
         //OnBallLaunched();
@@ -208,14 +215,14 @@ public class ThrowBallDeterministic : MonoBehaviour
             // Calcoliamo una nuova velocità per andare dal punto di impatto al canestro
             // Usiamo un tempo di volo molto breve per il rimbalzo (es. 0.4 secondi)
             float bounceTime = 0.4f;
-            Vector3 assistVelocity = CalculateVelocity(hoopTarget.position, ballRb.transform.position, bounceTime);
+            Vector3 assistVelocity = CalculateVelocity(hoopTarget.position, transform.position, bounceTime);
 
             // Applichiamo la nuova velocità "corretta"
             ballRb.velocity = assistVelocity;
 
             // 4. (Opzionale) Aggiungiamo un leggero backspin estetico
             // Questo rende il canestro visivamente più gratificante
-            ballRb.AddTorque(ballRb.transform.right * 2f, ForceMode.Impulse);
+            ballRb.AddTorque(transform.right * 2f, ForceMode.Impulse);
 
             Debug.Log("Bank Assist Attivato: Palla diretta al canestro!");
         }
@@ -234,15 +241,17 @@ public class ThrowBallDeterministic : MonoBehaviour
             }
         }
 
-        if (isLaunched && ballRb.transform.position.y <= yResetThreshold) {
+        if (isLaunched && transform.position.y <= yResetThreshold) {
             ResetBall();
-            GameManager.Instance.OnShotFinished(this);
+            GameManager.Instance.OnShotFinished(myPlayer);
         }
     }
 
     private void ResetBallState() {
         ballRb.isKinematic = true;
         isSwiping = false;
+        perfectShot = false;
+        passedTopTrigger = false;
     }
 
     /*public void OnBallLaunched() {
@@ -262,8 +271,8 @@ public class ThrowBallDeterministic : MonoBehaviour
         ResetBallState();
         ballRb.velocity = Vector3.zero;
         ballRb.angularVelocity = Vector3.zero;
-        ballRb.transform.localPosition = initialBallLocalPosition;
-        ballRb.transform.rotation = initialBallRotation;
+        transform.localPosition = initialBallLocalPosition;
+        transform.rotation = initialBallRotation;
 
         /* --- LOGICA DI TEST ---
         if (playerPositioner != null) {
@@ -275,6 +284,18 @@ public class ThrowBallDeterministic : MonoBehaviour
         if (powerBarUI != null) {
             powerBarUI.ResetUI();
         }
+    }
+
+    public void setPassedTopTrigger(bool passedTopTrigger) {
+        this.passedTopTrigger = passedTopTrigger;
+    }
+
+    public bool getPassedTopTrigger() {
+        return passedTopTrigger;
+    }
+
+    public bool getIsShotPerfect() {
+        return perfectShot;
     }
 
     private void OnDrawGizmos() {
@@ -298,17 +319,17 @@ public class ThrowBallDeterministic : MonoBehaviour
 
     private void DrawTrajectoryArc(Vector3 target, Color color) {
         Gizmos.color = color;
-        Vector3 lastPoint = ballRb.transform.position;
+        Vector3 lastPoint = transform.position;
 
         // Calcoliamo la velocità iniziale che userebbe il sistema
-        Vector3 velocity = CalculateVelocity(target, ballRb.transform.position, timeOfFlight);
+        Vector3 velocity = CalculateVelocity(target, transform.position, timeOfFlight);
 
         for (int i = 1; i <= arcResolution; i++) {
             // Calcola il tempo trascorso per questo segmento
             float t = (i / (float)arcResolution) * timeOfFlight;
 
             // Formula del moto uniformemente accelerato: P = P0 + V0*t + 0.5*g*t^2
-            Vector3 nextPoint = ballRb.transform.position + velocity * t + 0.5f * Physics.gravity * Mathf.Pow(t, 2);
+            Vector3 nextPoint = transform.position + velocity * t + 0.5f * Physics.gravity * Mathf.Pow(t, 2);
 
             Gizmos.DrawLine(lastPoint, nextPoint);
             lastPoint = nextPoint;
