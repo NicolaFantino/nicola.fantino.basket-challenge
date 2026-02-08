@@ -31,7 +31,7 @@ public class HoopValidator : MonoBehaviour {
 
                     if (shooter != null && GameManager.Instance != null) {
                         // Comunichiamo al manager il giocatore e se il tiro era perfetto
-                        GameManager.Instance.AwardPoints(shooter, ball.getIsShotPerfect());
+                        GameManager.Instance.AwardPoints(shooter, ball);
                         Debug.Log($"<color=green>CANESTRO VALIDO!</color> Tiratore: {shooter.Name}");
                     }
                 }

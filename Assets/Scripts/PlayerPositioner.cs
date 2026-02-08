@@ -20,7 +20,7 @@ public class PlayerPositioner : MonoBehaviour {
     /// <summary>
     /// Sposta il player in una posizione casuale all'interno del ventaglio definito da questo oggetto.
     /// </summary>
-    public void MovePlayerToRandomPosition(Transform playerTransform) {
+    public float MovePlayerToRandomPosition(Transform playerTransform) {
         // 1. Generiamo valori casuali per angolo e distanza
         float randomAngle = Random.Range(-maxAngle, maxAngle);
         float randomDistance = Random.Range(minDistance, maxDistance);
@@ -43,7 +43,12 @@ public class PlayerPositioner : MonoBehaviour {
         playerTransform.LookAt(lookTarget);
 
         Debug.Log($"Player spostato a {randomDistance:F2}m con angolo di {randomAngle:F2}°");
+
+        return randomDistance;
     }
+
+    public float MaxDistance => maxDistance;
+    public float MinDistance => minDistance;
 
     // =================== LOGICA DEI GIZMOS ===================
 

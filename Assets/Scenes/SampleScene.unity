@@ -808,6 +808,28 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1913870032}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &988308038
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 988308035}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2282cf269cd94df40a28e55c9ce54c85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  boardRenderer: {fileID: 988308039}
+  normalMaterial: {fileID: 239378781582670930, guid: 39cdb67551e295b4eb562c1180c6b15a,
+    type: 3}
+  bonusMaterial: {fileID: 2100000, guid: 83a3011f1e8d5414a99bd8d704ac1f21, type: 2}
+--- !u!23 &988308039 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: 39cdb67551e295b4eb562c1180c6b15a,
+    type: 3}
+  m_PrefabInstance: {fileID: 1913870032}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1038769699
 GameObject:
   m_ObjectHideFlags: 0
@@ -1913,6 +1935,8 @@ MonoBehaviour:
   - {fileID: 1114836283}
   positioner: {fileID: 1038769700}
   matchDuration: 60
+  backboardScript: {fileID: 988308038}
+  bonusDuration: 10
 --- !u!4 &1997640232
 Transform:
   m_ObjectHideFlags: 0

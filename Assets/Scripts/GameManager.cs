@@ -1,10 +1,11 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour {
     public static GameManager Instance { get; private set; }
 
-    [Header("Competition Settings")]
+    [Header("References")]
     [SerializeField] private List<Player> players = new List<Player>();
     [SerializeField] private PlayerPositioner positioner;
 
@@ -13,6 +14,11 @@ public class GameManager : MonoBehaviour {
     private float currentTime;
     private bool isMatchActive = false;
 
+    [Header("Bonus Event Settings")]
+    [SerializeField] private BackboardBonus backboardScript; // Trascina qui il tabellone
+    [SerializeField] private float bonusDuration = 10f; // Quanto dura la luce accesa
+    private bool hasBonusEventHappened = false;
+
     private void Awake() {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
@@ -20,6 +26,7 @@ public class GameManager : MonoBehaviour {
 
     private void Start() {
         StartMatch();
+        StartCoroutine(BonusEventRoutine());
     }
 
     private void Update() {
@@ -34,9 +41,39 @@ public class GameManager : MonoBehaviour {
         }
     }
 
+    private IEnumerator BonusEventRoutine() {
+        // Aspetta un tempo casuale tra 10s e (DurataPartita - 10s)
+        float randomWait = Random.Range(10f, matchDuration - 15f);
+        yield return new WaitForSeconds(randomWait);
+
+        if (isMatchActive && !hasBonusEventHappened) {
+            TriggerBonusEvent();
+        }
+    }
+
+    private void TriggerBonusEvent() {
+        hasBonusEventHappened = true;
+
+        // Scegliamo a caso tra 4, 6 o 8
+        int[] options = { 4, 6, 8 };
+        int randomPoints = options[Random.Range(0, options.Length)];
+
+        if (backboardScript != null) {
+            backboardScript.ActivateBonus(randomPoints);
+            // Spegni dopo tot secondi
+            StartCoroutine(DeactivateBonusAfterTime());
+        }
+    }
+
+    private IEnumerator DeactivateBonusAfterTime() {
+        yield return new WaitForSeconds(bonusDuration);
+        if (backboardScript != null) backboardScript.DeactivateBonus();
+    }
+
     private void StartMatch() {
         currentTime = matchDuration;
         isMatchActive = true;
+        hasBonusEventHappened = false;
         Debug.Log("Partita Iniziata!");
     }
 
@@ -61,10 +98,21 @@ public class GameManager : MonoBehaviour {
     }
 
     // 1. Metodo per assegnare SOLO i punti (chiamato dal sensore)
-    public void AwardPoints(Player shooter, bool perfectShot) {
+    public void AwardPoints(Player shooter, ThrowBallDeterministic ball) {
         if (!isMatchActive) return;
 
-        int points = perfectShot ? 3 : 2;
+        int points = 0;
+
+        // 1. Controllo Bonus Tabellone
+        if (ball.DidHitBonusBoard()) {
+            points = ball.GetBonusPointsValue();
+            Debug.Log($"PUNTI BONUS TABELLONE! +{points}");
+        }
+        // 2. Altrimenti calcolo normale
+        else {
+            points = ball.getIsShotPerfect() ? 3 : 2;
+        }
+
         shooter.AddScore(points);
         Debug.Log($"{shooter.Name} ha segnato! Totale: {shooter.Score}");
     }

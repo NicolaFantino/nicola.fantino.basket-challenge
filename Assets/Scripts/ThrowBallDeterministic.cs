@@ -55,6 +55,9 @@ public class ThrowBallDeterministic : MonoBehaviour
     private bool perfectShot;
     private bool passedTopTrigger = false;
 
+    private bool hitBonusBackboard = false; // Flag per il bonus
+    private int potentialBonusPoints = 0;   // Quanti punti vale
+
     private void Awake() {
         myPlayer = this.GetComponentInParent<Player>();
         if (myPlayer == null) Debug.LogError($"Palla {gameObject.name} non ha un componente Player nei genitori!");
@@ -203,28 +206,34 @@ public class ThrowBallDeterministic : MonoBehaviour
     }
 
     private void OnCollisionEnter(Collision collision) {
-        // Se il tiro è un Bank Shot e abbiamo colpito il Tabellone
-        if (pendingBankAssist && collision.gameObject.CompareTag("Backboard")) {
-            pendingBankAssist = false; // Assist usato!
+        // Se colpiamo il tabellone
+        if (collision.gameObject.CompareTag("Backboard")) {
 
-            // 1. Reset totale della palla
-            // Fermiamo sia il movimento lineare che la rotazione caotica dell'impatto
-            ballRb.velocity = Vector3.zero;
-            ballRb.angularVelocity = Vector3.zero;
+            // --- NUOVA LOGICA BONUS ---
+            // Controlliamo se il tabellone ha lo script del bonus ed è attivo
+            BackboardBonus bonusScript = collision.gameObject.GetComponent<BackboardBonus>();
+            if (bonusScript != null && bonusScript.IsActive) {
+                hitBonusBackboard = true;
+                potentialBonusPoints = bonusScript.BonusPoints;
+                Debug.Log($"<color=yellow>Tabellone Bonus Colpito! (+{potentialBonusPoints} se entra)</color>");
+            }
+            // --------------------------
 
-            // Calcoliamo una nuova velocità per andare dal punto di impatto al canestro
-            // Usiamo un tempo di volo molto breve per il rimbalzo (es. 0.4 secondi)
-            float bounceTime = 0.4f;
-            Vector3 assistVelocity = CalculateVelocity(hoopTarget.position, transform.position, bounceTime);
+            // --- TUA VECCHIA LOGICA BANK ASSIST (modificata leggermente per chiarezza) ---
+            if (pendingBankAssist) {
+                pendingBankAssist = false;
 
-            // Applichiamo la nuova velocità "corretta"
-            ballRb.velocity = assistVelocity;
+                ballRb.velocity = Vector3.zero;
+                ballRb.angularVelocity = Vector3.zero;
 
-            // 4. (Opzionale) Aggiungiamo un leggero backspin estetico
-            // Questo rende il canestro visivamente più gratificante
-            ballRb.AddTorque(transform.right * 2f, ForceMode.Impulse);
+                float bounceTime = 0.4f;
+                Vector3 assistVelocity = CalculateVelocity(hoopTarget.position, transform.position, bounceTime);
 
-            Debug.Log("Bank Assist Attivato: Palla diretta al canestro!");
+                ballRb.velocity = assistVelocity;
+                ballRb.AddTorque(transform.right * 2f, ForceMode.Impulse);
+
+                Debug.Log("Bank Assist Attivato: Palla diretta al canestro!");
+            }
         }
     }
 
@@ -252,6 +261,8 @@ public class ThrowBallDeterministic : MonoBehaviour
         isSwiping = false;
         perfectShot = false;
         passedTopTrigger = false;
+        hitBonusBackboard = false;
+        potentialBonusPoints = 0;
     }
 
     /*public void OnBallLaunched() {
@@ -296,6 +307,14 @@ public class ThrowBallDeterministic : MonoBehaviour
 
     public bool getIsShotPerfect() {
         return perfectShot;
+    }
+
+    public bool DidHitBonusBoard() {
+        return hitBonusBackboard;
+    }
+
+    public int GetBonusPointsValue() {
+        return potentialBonusPoints;
     }
 
     private void OnDrawGizmos() {
