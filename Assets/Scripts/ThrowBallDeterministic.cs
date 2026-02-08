@@ -30,11 +30,11 @@ public class ThrowBallDeterministic : MonoBehaviour
     [SerializeField] private Transform bankTarget; // Punto sul tabellone
     [SerializeField] private float timeOfFlight = 1.2f; // Quanto dura il volo della palla, TODO: da regolare in base alla distanza dal canestro
 
-    [Header("Logic Zones (0 to 1)")]
+    /*[Header("Logic Zones (0 to 1)")]
     [SerializeField] private float perfectThresholdMin = 0.40f;
     [SerializeField] private float perfectThresholdMax = 0.60f;
     [SerializeField] private float bankThresholdMin = 0.75f;
-    [SerializeField] private float bankThresholdMax = 0.85f;
+    [SerializeField] private float bankThresholdMax = 0.85f;*/
 
     [Header("Reset Settings")]
     [SerializeField] private float yResetThreshold = -1f;
@@ -73,9 +73,9 @@ public class ThrowBallDeterministic : MonoBehaviour
         initialBallRotation = transform.rotation;
     }
 
-    private void Start() {
+    /*private void Start() {
         powerBarUI.SetupZones(perfectThresholdMin, perfectThresholdMax, bankThresholdMin, bankThresholdMax);
-    }
+    }*/
 
     private void OnEnable() => controls.Enable();
     private void OnDisable() => controls.Disable();
@@ -125,34 +125,34 @@ public class ThrowBallDeterministic : MonoBehaviour
         Debug.Log($"Swipe Power: {power}");
 
         if (power < 0.1f) {
-            ResetBallState();
+            ResetBall();
             return;
         }
 
         // LOGICA DELLE ZONE
-        if (power >= perfectThresholdMin && power <= perfectThresholdMax) {
+        if (power >= myPlayer.MinPerfectZone && power <= myPlayer.MaxPerfectZone) {
             // TIRO PERFETTO
             finalTarget = hoopTarget.position;
             perfectShot = true;
             Debug.Log("PERFECT SHOT!");
-        } else if (power >= bankThresholdMin && power <= bankThresholdMax) {
+        } else if (power >= myPlayer.MinBankZone && power <= myPlayer.MaxBankZone) {
             // TIRO DI TABELLONE
             finalTarget = bankTarget.position;
             pendingBankAssist = true;
             Debug.Log("BANK SHOT!");
         } else {
-            if (power < perfectThresholdMin) {
+            if (power < myPlayer.MinPerfectZone) {
                 // CASO A: TIRO CORTO (Air ball o colpisce la base della rete)
                 // Usiamo InverseLerp per capire quanto siamo lontani dalla soglia minima
-                float shortScale = Mathf.InverseLerp(0.1f, perfectThresholdMin, power);
+                float shortScale = Mathf.InverseLerp(0.1f, myPlayer.MinPerfectZone, power);
                 float zOffset = Mathf.Lerp(-2.5f, -0.6f, shortScale); // Da molto corto a vicino al ferro
                 float yOffset = Mathf.Lerp(-1.0f, -0.2f, shortScale);
 
                 finalTarget = hoopTarget.position + new Vector3(0, yOffset, zOffset);
                 Debug.Log("MISS: Tiro troppo debole.");
-            } else if (power > bankThresholdMax) {
+            } else if (power > myPlayer.MaxBankZone) {
                 // CASO B: TIRO LUNGO (Sbatte alto sul tabellone o vola oltre)
-                float longScale = Mathf.InverseLerp(bankThresholdMax, 1.0f, power);
+                float longScale = Mathf.InverseLerp(myPlayer.MaxBankZone, 1.0f, power);
                 float zOffset = Mathf.Lerp(0.6f, 3.0f, longScale);
                 float yOffset = Mathf.Lerp(0.5f, 1.5f, longScale);
 

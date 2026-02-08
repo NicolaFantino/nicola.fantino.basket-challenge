@@ -8,6 +8,12 @@ public class GameManager : MonoBehaviour {
     [Header("References")]
     [SerializeField] private List<Player> players = new List<Player>();
     [SerializeField] private PlayerPositioner positioner;
+    [SerializeField] private PowerBarUI powerBarUI;
+
+    [Header("Difficulty Settings")]
+    [SerializeField] private float perfectZoneWidth = 0.15f;
+    [SerializeField] private float bankZoneWidth = 0.1f;
+   
 
     [Header("Match Settings")]
     [SerializeField] private float matchDuration = 60f; // Durata in secondi (es. 1 minuto)
@@ -27,6 +33,39 @@ public class GameManager : MonoBehaviour {
     private void Start() {
         StartMatch();
         StartCoroutine(BonusEventRoutine());
+
+        // Posizioniamo tutti i giocatori all'inizio
+        foreach (var p in players) {
+            SetupTurnForPlayer(p);
+        }
+    }
+
+    // --- NUOVO METODO CENTRALE PER GESTIRE IL TURNO ---
+    private void SetupTurnForPlayer(Player player) {
+        if (positioner == null || player == null) return;
+
+        // 1. Spostiamo il giocatore e otteniamo la distanza
+        float distance = positioner.MovePlayerToRandomPosition(player.transform);
+
+        // 2. Calcoliamo la potenza ideale in base alla distanza (Mapping)
+        // Vicino (4m) -> Slider basso (0.25). Lontano (15m) -> Slider alto (0.85)
+        float normalizedDist = Mathf.InverseLerp(positioner.MinDistance, positioner.MaxDistance, distance);
+        float idealPower = Mathf.Lerp(0.25f, 0.85f, normalizedDist);
+
+        // 3. Calcoliamo i range (Min e Max) per le zone
+        float minPerfectZone = Mathf.Clamp(idealPower - (perfectZoneWidth / 2f), 0.1f, 0.9f);
+        float maxPerfectZone = Mathf.Clamp(idealPower + (perfectZoneWidth / 2f), 0.1f, 0.9f);
+
+        float minBankZone = Mathf.Clamp(maxPerfectZone + 0.05f, 0.1f, 0.95f); // Il Bank shot è un po' più forte
+        float maxBankZone = Mathf.Clamp(minBankZone + bankZoneWidth, 0.1f, 1.0f);
+
+        // Aggiorniamo i valori delle zone di tiro nel giocatore
+            player.SetThrowZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
+
+        // 5. Se è il giocatore UMANO, aggiorniamo anche la PowerBar a schermo
+        if (!player.IsAI && powerBarUI != null) {
+            powerBarUI.SetupZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
+        }
     }
 
     private void Update() {
@@ -127,9 +166,10 @@ public class GameManager : MonoBehaviour {
 
         if (player != null) {
             // 1. Spostiamo solo il giocatore interessato
-            if (positioner != null) {
+            /*if (positioner != null) {
                 positioner.MovePlayerToRandomPosition(player.transform);
-            }
+            }*/
+            SetupTurnForPlayer(player);
 
             // 2. Resettiamo la palla
             //shooter.BallScript.ResetBall();

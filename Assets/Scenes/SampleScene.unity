@@ -1165,10 +1165,6 @@ MonoBehaviour:
   hoopTarget: {fileID: 1286140920}
   bankTarget: {fileID: 114334986}
   timeOfFlight: 1.2
-  perfectThresholdMin: 0.4
-  perfectThresholdMax: 0.6
-  bankThresholdMin: 0.75
-  bankThresholdMax: 0.85
   yResetThreshold: 0.5
   showDebugArcs: 1
   arcResolution: 20
@@ -1934,6 +1930,9 @@ MonoBehaviour:
   players:
   - {fileID: 1114836283}
   positioner: {fileID: 1038769700}
+  powerBarUI: {fileID: 2006135771}
+  perfectZoneWidth: 0.15
+  bankZoneWidth: 0.1
   matchDuration: 60
   backboardScript: {fileID: 988308038}
   bonusDuration: 10
@@ -2098,10 +2097,6 @@ MonoBehaviour:
   hoopTarget: {fileID: 1286140920}
   bankTarget: {fileID: 114334986}
   timeOfFlight: 1.2
-  perfectThresholdMin: 0.4
-  perfectThresholdMax: 0.6
-  bankThresholdMin: 0.75
-  bankThresholdMax: 0.85
   yResetThreshold: -1
   showDebugArcs: 1
   arcResolution: 20
