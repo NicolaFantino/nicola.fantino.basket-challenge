@@ -6,6 +6,7 @@ using UnityEngine;
 public class Player: MonoBehaviour {
 
     [SerializeField] private string playerName;
+    [SerializeField] private Sprite profileImage;
     [SerializeField] private bool isAI = false;
 
     private int score = 0;
@@ -15,9 +16,10 @@ public class Player: MonoBehaviour {
     private float maxBankZone;
 
     // Proprietà pubbliche per permettere al GameManager di leggere i dati
-    public string Name => name;
+    public string Name => playerName;
     public bool IsAI => isAI;
     public int Score => score;
+    public Sprite ProfileImage => profileImage;
 
     public void AddScore(int points) {
         score += points;

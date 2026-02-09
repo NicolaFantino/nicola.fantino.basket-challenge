@@ -8,7 +8,7 @@ public class GameManager : MonoBehaviour {
     [Header("References")]
     [SerializeField] private List<Player> players = new List<Player>();
     [SerializeField] private PlayerPositioner positioner;
-    [SerializeField] private PowerBarUI powerBarUI;
+    //[SerializeField] private PowerBarUI powerBarUI;
 
     [Header("Difficulty Settings")]
     [SerializeField] private float perfectZoneWidth = 0.15f;
@@ -38,6 +38,12 @@ public class GameManager : MonoBehaviour {
         foreach (var p in players) {
             SetupTurnForPlayer(p);
         }
+
+        // --- NUOVO: Setup della grafica (Avatar e Nomi) ---
+        if (GameplayUI.Instance != null && players.Count >= 2) {
+            // Assumiamo players[0] = Tu, players[1] = Avversario
+            GameplayUI.Instance.SetupHUD(players[0], players[1]);
+        }
     }
 
     // --- NUOVO METODO CENTRALE PER GESTIRE IL TURNO ---
@@ -63,8 +69,8 @@ public class GameManager : MonoBehaviour {
             player.SetThrowZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
 
         // 5. Se è il giocatore UMANO, aggiorniamo anche la PowerBar a schermo
-        if (!player.IsAI && powerBarUI != null) {
-            powerBarUI.SetupZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
+        if (!player.IsAI && GameplayUI.Instance.GetPowerBar() != null) {
+            GameplayUI.Instance.GetPowerBar().SetupZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
 
             // CAMBIO CAMERA
             /*if (CameraManager.Instance != null) {
@@ -79,8 +85,16 @@ public class GameManager : MonoBehaviour {
         // Gestione del countdown
         if (currentTime > 0) {
             currentTime -= Time.deltaTime;
+
+            if (GameplayUI.Instance != null) {
+                GameplayUI.Instance.UpdateTimer(currentTime);
+            }
+
         } else {
             currentTime = 0;
+            if (GameplayUI.Instance != null) {
+                GameplayUI.Instance.UpdateTimer(0);
+            }
             EndMatch();
         }
     }
@@ -146,19 +160,30 @@ public class GameManager : MonoBehaviour {
         if (!isMatchActive) return;
 
         int points = 0;
+        bool isBonus = ball.DidHitBonusBoard();
+        bool isPerfect = ball.getIsShotPerfect(); // Assicurati che questo metodo sia public in ThrowBall
 
-        // 1. Controllo Bonus Tabellone
-        if (ball.DidHitBonusBoard()) {
+        if (isBonus) {
             points = ball.GetBonusPointsValue();
-            Debug.Log($"PUNTI BONUS TABELLONE! +{points}");
-        }
-        // 2. Altrimenti calcolo normale
-        else {
-            points = ball.getIsShotPerfect() ? 3 : 2;
+        } else {
+            points = isPerfect ? 3 : 2;
         }
 
         shooter.AddScore(points);
         Debug.Log($"{shooter.Name} ha segnato! Totale: {shooter.Score}");
+
+        //AGGIORNAMENTO UI
+        if (GameplayUI.Instance != null) {
+            // 1. Mostra il Popup (Solo se è il giocatore umano a segnare, opzionale)
+            if (!shooter.IsAI) {
+                GameplayUI.Instance.SpawnScorePopup(points, isPerfect, isBonus);
+            }
+
+            // 2. Aggiorna il punteggio fisso in alto
+            // Assumiamo che il primo della lista sia il P1 (Umano)
+            bool isP1 = (players.IndexOf(shooter) == 0);
+            GameplayUI.Instance.UpdateScore(shooter.Name, shooter.Score, isP1);
+        }
     }
 
     // Chiamato da ThrowBallDeterministic.cs

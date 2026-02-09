@@ -169,7 +169,7 @@ public class ThrowBallDeterministic : MonoBehaviour
 
         ThrowTowardsTarget(finalTarget);
 
-        // --- NUOVO: La camera segue la palla ---
+        // La camera segue la palla
         if (CameraFollowSwitcher.Instance != null) {
             CameraFollowSwitcher.Instance.SwitchToBall(this.transform);
         }

@@ -8,30 +8,25 @@ public class CameraFollowSwitcher : MonoBehaviour {
     [SerializeField] private CinemachineVirtualCamera mainCam;
 
     // --- MEMORIA DELLO STATO INIZIALE ---
-    private Transform originalFollowTarget;
+    [SerializeField] private Transform originalFollowTarget;
 
     // Body (Framing Transposer)
-    private Vector3 originalBodyOffset;
-    private float origX_Damping;
-    private float origY_Damping;
-    private float origZ_Damping;
-
-    // Aim (Composer)
-    private float origHorz_Damping;
-    private float origVert_Damping;
+    [SerializeField] private Vector3 originalBodyOffset;
+    [SerializeField] private float origX_Damping;
+    [SerializeField] private float origY_Damping;
+    [SerializeField] private float origZ_Damping;
 
     // Componenti Cinemachine
     private CinemachineFramingTransposer framingTransposer;
-    private CinemachineComposer composer;
 
     private void Awake() {
         if (Instance == null) Instance = this;
-
-        if (mainCam != null) {
+        framingTransposer = mainCam.GetCinemachineComponent<CinemachineFramingTransposer>();
+        /*if (mainCam != null) {
             originalFollowTarget = mainCam.Follow;
 
             // 1. RECUPERO E SALVATAGGIO DATI BODY (Framing Transposer)
-            framingTransposer = mainCam.GetCinemachineComponent<CinemachineFramingTransposer>();
+            
             if (framingTransposer != null) {
                 originalBodyOffset = framingTransposer.m_TrackedObjectOffset;
 
@@ -40,14 +35,7 @@ public class CameraFollowSwitcher : MonoBehaviour {
                 origY_Damping = framingTransposer.m_YDamping;
                 origZ_Damping = framingTransposer.m_ZDamping;
             }
-
-            // 2. RECUPERO E SALVATAGGIO DATI AIM (Composer)
-            composer = mainCam.GetCinemachineComponent<CinemachineComposer>();
-            if (composer != null) {
-                origHorz_Damping = composer.m_HorizontalDamping;
-                origVert_Damping = composer.m_VerticalDamping;
-            }
-        }
+        }*/
     }
 
     /// <summary>
@@ -69,13 +57,6 @@ public class CameraFollowSwitcher : MonoBehaviour {
             framingTransposer.m_YDamping = origY_Damping;
             framingTransposer.m_ZDamping = origZ_Damping;
         }
-
-        // 3. Gestione Aim (Composer)
-        if (composer != null) {
-            // RIPRISTINA il Damping originale (Rotazione morbida)
-            composer.m_HorizontalDamping = origHorz_Damping;
-            composer.m_VerticalDamping = origVert_Damping;
-        }
     }
 
     /// <summary>
@@ -96,13 +77,6 @@ public class CameraFollowSwitcher : MonoBehaviour {
             framingTransposer.m_XDamping = 0f;
             framingTransposer.m_YDamping = 0f;
             framingTransposer.m_ZDamping = 0f;
-        }
-
-        // 3. Gestione Aim
-        if (composer != null) {
-            // AZZERA il Damping (Inquadra subito il canestro dalla nuova angolazione)
-            composer.m_HorizontalDamping = 0f;
-            composer.m_VerticalDamping = 0f;
         }
     }
 }
