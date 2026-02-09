@@ -168,6 +168,11 @@ public class ThrowBallDeterministic : MonoBehaviour
         }
 
         ThrowTowardsTarget(finalTarget);
+
+        // --- NUOVO: La camera segue la palla ---
+        if (CameraFollowSwitcher.Instance != null) {
+            CameraFollowSwitcher.Instance.SwitchToBall(this.transform);
+        }
     }
 
     private void ThrowTowardsTarget(Vector3 target) {
@@ -294,6 +299,10 @@ public class ThrowBallDeterministic : MonoBehaviour
 
         if (powerBarUI != null) {
             powerBarUI.ResetUI();
+        }
+        // --- NUOVO: La camera torna al player ---
+        if (CameraFollowSwitcher.Instance != null) {
+            CameraFollowSwitcher.Instance.ResetToPlayer();
         }
     }
 

@@ -65,6 +65,11 @@ public class GameManager : MonoBehaviour {
         // 5. Se è il giocatore UMANO, aggiorniamo anche la PowerBar a schermo
         if (!player.IsAI && powerBarUI != null) {
             powerBarUI.SetupZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
+
+            // CAMBIO CAMERA
+            /*if (CameraManager.Instance != null) {
+                CameraManager.Instance.SwitchToPlayerFocus(player.transform);
+            }*/
         }
     }
 
