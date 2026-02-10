@@ -31,8 +31,9 @@ public class GameManager : MonoBehaviour {
     }
 
     private void Start() {
-        StartMatch();
-        StartCoroutine(BonusEventRoutine());
+        StartCoroutine(StartMatchCountdown());
+        //StartMatch();
+        //StartCoroutine(BonusEventRoutine());
 
         // Posizioniamo tutti i giocatori all'inizio
         foreach (var p in players) {
@@ -44,6 +45,38 @@ public class GameManager : MonoBehaviour {
             // Assumiamo players[0] = Tu, players[1] = Avversario
             GameplayUI.Instance.SetupHUD(players[0], players[1]);
         }
+    }
+
+    // --- NUOVA LOGICA DI START ---
+    private IEnumerator StartMatchCountdown() {
+        isMatchActive = false; // Blocchiamo tutto all'inizio
+        Debug.Log("Countdown Iniziato...");
+
+        if (GameplayUI.Instance != null) {
+            // 3
+            GameplayUI.Instance.UpdateCountdownText("3");
+            yield return new WaitForSeconds(1f);
+
+            // 2
+            GameplayUI.Instance.UpdateCountdownText("2");
+            yield return new WaitForSeconds(1f);
+
+            // 1
+            GameplayUI.Instance.UpdateCountdownText("1");
+            yield return new WaitForSeconds(1f);
+
+            // GO!
+            GameplayUI.Instance.UpdateCountdownText("GO!");
+            yield return new WaitForSeconds(0.5f); // Il GO dura meno
+
+            GameplayUI.Instance.HideCountdown();
+        } else {
+            // Fallback se non c'è UI, aspettiamo comunque
+            yield return new WaitForSeconds(3f);
+        }
+
+        // ORA inizia davvero la partita
+        StartMatch();
     }
 
     // --- NUOVO METODO CENTRALE PER GESTIRE IL TURNO ---
@@ -130,28 +163,50 @@ public class GameManager : MonoBehaviour {
 
     private void StartMatch() {
         currentTime = matchDuration;
-        isMatchActive = true;
+        isMatchActive = true; // Sblocca i controlli
         hasBonusEventHappened = false;
+
+        StartCoroutine(BonusEventRoutine()); // Avvia il timer del bonus solo ora
         Debug.Log("Partita Iniziata!");
     }
 
     private void EndMatch() {
         isMatchActive = false;
-        Debug.Log("TEMPO SCADUTO! La partita è terminata.");
+        Debug.Log("PARTITA FINITA!");
 
-        // Qui potresti disabilitare gli input di tutti i giocatori
-        foreach (var player in players) {
-            // Esempio: player.BallScript.enabled = false;
+        // 1. Recupera i giocatori (assumiamo P1 = Umano, P2 = AI)
+        Player p1 = players[0];
+        Player p2 = players[1];
+
+        // 2. Determina Vincitore
+        bool isWin = p1.Score > p2.Score;
+        bool isDraw = p1.Score == p2.Score;
+
+        // 3. Calcola Ricompense (Logica simulata)
+        int trophiesChange = 0;
+        int moneyEarned = 0;
+
+        if (isWin) {
+            trophiesChange = 25;  // Hai vinto 25 coppe
+            moneyEarned = 100;    // Hai guadagnato 100 monete
+        } else if (isDraw) {
+            trophiesChange = 0;
+            moneyEarned = 20;
+        } else {
+            trophiesChange = -20; // Hai perso 20 coppe
+            moneyEarned = 10;     // Consolazione
         }
 
-        // Mostra il punteggio finale in console
-        ShowFinalScores();
+        // 4. Chiama la UI
+        if (GameplayUI.Instance != null) {
+            GameplayUI.Instance.ShowGameOver(isWin, p1, p2, trophiesChange, moneyEarned);
+        }
     }
 
     private void ShowFinalScores() {
         Debug.Log("--- CLASSIFICA FINALE ---");
         foreach (var p in players) {
-            Debug.Log($"{p.Name}: {p.Score} punti");
+            Debug.Log($"{p.PlayerName}: {p.Score} punti");
         }
     }
 
@@ -170,7 +225,7 @@ public class GameManager : MonoBehaviour {
         }
 
         shooter.AddScore(points);
-        Debug.Log($"{shooter.Name} ha segnato! Totale: {shooter.Score}");
+        Debug.Log($"{shooter.PlayerName} ha segnato! Totale: {shooter.Score}");
 
         //AGGIORNAMENTO UI
         if (GameplayUI.Instance != null) {
@@ -182,7 +237,7 @@ public class GameManager : MonoBehaviour {
             // 2. Aggiorna il punteggio fisso in alto
             // Assumiamo che il primo della lista sia il P1 (Umano)
             bool isP1 = (players.IndexOf(shooter) == 0);
-            GameplayUI.Instance.UpdateScore(shooter.Name, shooter.Score, isP1);
+            GameplayUI.Instance.UpdateScore(shooter.PlayerName, shooter.Score, isP1);
         }
     }
 
@@ -207,4 +262,6 @@ public class GameManager : MonoBehaviour {
             //Debug.Log($"Timer: {Mathf.CeilToInt(currentTime)}s | {ballPlayer.Name} ha resettato. Score: {shooter.Score}");
         }
     }
+
+    public bool IsMatchActive => isMatchActive;
 }

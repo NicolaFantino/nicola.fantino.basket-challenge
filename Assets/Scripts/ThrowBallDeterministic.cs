@@ -81,6 +81,9 @@ public class ThrowBallDeterministic : MonoBehaviour
     private void OnDisable() => controls.Disable();
 
     private void StartSwipe() {
+        //Ignore swipe if the match isn't active
+        if (GameManager.Instance != null && !GameManager.Instance.IsMatchActive) return;
+
         if (isLaunched || isSwiping) return;
         isSwiping = true;
         currentMaxPower = 0f; // Reset per il nuovo tiro

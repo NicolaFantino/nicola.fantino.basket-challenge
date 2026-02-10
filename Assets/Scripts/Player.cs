@@ -16,7 +16,7 @@ public class Player: MonoBehaviour {
     private float maxBankZone;
 
     // Proprietà pubbliche per permettere al GameManager di leggere i dati
-    public string Name => playerName;
+    public string PlayerName => playerName;
     public bool IsAI => isAI;
     public int Score => score;
     public Sprite ProfileImage => profileImage;
