@@ -37,7 +37,9 @@ public class GameplayUI : MonoBehaviour {
 
     [Header("Texts")]
     [SerializeField] private TextMeshProUGUI resultTitleText;
+    [SerializeField] private TextMeshProUGUI p1NameTextFinalScore;
     [SerializeField] private TextMeshProUGUI finalScoreP1Text;
+    [SerializeField] private TextMeshProUGUI p2NameTextFinalScore;
     [SerializeField] private TextMeshProUGUI finalScoreP2Text;
 
     [Header("Rewards")]
@@ -165,12 +167,12 @@ public class GameplayUI : MonoBehaviour {
         if (p1 != null) {
             finalScoreP1Text.text = p1.Score.ToString();
             if (p1FinalAvatar != null) p1FinalAvatar.sprite = p1.ProfileImage;
-            if(p1.PlayerName != null) p1NameText.text = p1.PlayerName;
+            if(p1.PlayerName != null) p1NameTextFinalScore.text = p1.PlayerName;
         }
         if (p2 != null) {
             finalScoreP2Text.text = p2.Score.ToString();
             if (p2FinalAvatar != null) p2FinalAvatar.sprite = p2.ProfileImage;
-            if(p2.PlayerName != null) p2NameText.text = p2.PlayerName;
+            if(p2.PlayerName != null) p2NameTextFinalScore.text = p2.PlayerName;
         }
 
         // 3. Ricompense

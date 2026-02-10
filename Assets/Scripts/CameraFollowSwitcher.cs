@@ -22,6 +22,12 @@ public class CameraFollowSwitcher : MonoBehaviour {
     private void Awake() {
         if (Instance == null) Instance = this;
         framingTransposer = mainCam.GetCinemachineComponent<CinemachineFramingTransposer>();
+        
+        framingTransposer.m_TrackedObjectOffset = originalBodyOffset;
+        framingTransposer.m_XDamping = origX_Damping;
+        framingTransposer.m_YDamping = origY_Damping;
+        framingTransposer.m_ZDamping = origZ_Damping;
+
         /*if (mainCam != null) {
             originalFollowTarget = mainCam.Follow;
 

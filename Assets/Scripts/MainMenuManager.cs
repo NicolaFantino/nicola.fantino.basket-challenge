@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement; // Fondamentale per cambiare scena
 
 public class MainMenuManager : MonoBehaviour {
 
-    [SerializeField] private string gameSceneName = "SampleScene";
+    [SerializeField] private string gameSceneName = "GameplayScene";
 
     public void PlayGame() {
         // Carica la scena di gioco
