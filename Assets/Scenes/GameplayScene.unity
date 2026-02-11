@@ -477,9 +477,10 @@ GameObject:
   - component: {fileID: 51319025}
   - component: {fileID: 51319023}
   - component: {fileID: 51319024}
-  m_Layer: 0
+  - component: {fileID: 51319028}
+  m_Layer: 6
   m_Name: Ball
-  m_TagString: Untagged
+  m_TagString: Ball
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -496,7 +497,7 @@ Rigidbody:
   m_Drag: 0
   m_AngularDrag: 0.05
   m_UseGravity: 1
-  m_IsKinematic: 0
+  m_IsKinematic: 1
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 1
@@ -579,6 +580,26 @@ Transform:
   m_Father: {fileID: 2056356634}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &51319028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 51319022}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f89cce0f170150b4ba085fbefba06b4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hoopTarget: {fileID: 1286140920}
+  bankTarget: {fileID: 114334986}
+  timeOfFlight: 1.2
+  yResetThreshold: 1
+  minThinkTime: 0.5
+  maxThinkTime: 1.2
+  perfectChance: 0.4
+  bankChance: 0.2
 --- !u!1 &69478113
 GameObject:
   m_ObjectHideFlags: 0
@@ -3412,7 +3433,7 @@ GameObject:
   - component: {fileID: 1229307492}
   - component: {fileID: 1229307487}
   - component: {fileID: 1229307493}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Ball
   m_TagString: Ball
   m_Icon: {fileID: 0}
@@ -3526,15 +3547,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58105b9e8a6ad4642801cb2826a51891, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  powerBarUI: {fileID: 2006135771}
-  maxSwipeDuration: 0.8
-  screenRangeMaxPower: 0.5
   hoopTarget: {fileID: 1286140920}
   bankTarget: {fileID: 114334986}
   timeOfFlight: 1.2
   yResetThreshold: 1
-  showDebugArcs: 1
-  arcResolution: 20
+  powerBarUI: {fileID: 2006135771}
+  maxSwipeDuration: 0.8
+  screenRangeMaxPower: 0.5
 --- !u!1 &1271923919
 GameObject:
   m_ObjectHideFlags: 0
@@ -4297,7 +4316,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1442562870}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Mesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4989,7 +5008,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1688140418}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Mesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}

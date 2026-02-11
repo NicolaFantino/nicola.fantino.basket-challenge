@@ -101,14 +101,19 @@ public class GameManager : MonoBehaviour {
         // Aggiorniamo i valori delle zone di tiro nel giocatore
             player.SetThrowZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
 
-        // 5. Se è il giocatore UMANO, aggiorniamo anche la PowerBar a schermo
-        if (!player.IsAI && GameplayUI.Instance.GetPowerBar() != null) {
-            GameplayUI.Instance.GetPowerBar().SetupZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
-
-            // CAMBIO CAMERA
-            /*if (CameraManager.Instance != null) {
-                CameraManager.Instance.SwitchToPlayerFocus(player.transform);
-            }*/
+        //Gestione UMANO vs AI
+        if (!player.IsAI) {
+            // UMANO: Aggiorna la UI (La palla aspetterà l'input del dito)
+            if (GameplayUI.Instance.GetPowerBar() != null) {
+                GameplayUI.Instance.GetPowerBar().SetupZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
+            }
+        } else {
+            //AI: Fai partire il timer per il prossimo tiro ---
+            // Solo se la partita è attiva (evita che tiri mentre c'è Game Over o Countdown)
+            if (isMatchActive) {
+                ThrowBallAI aiBall = player.GetComponentInChildren<ThrowBallAI>();
+                if (aiBall != null) aiBall.TakeTurn();
+            }
         }
     }
 
@@ -166,6 +171,14 @@ public class GameManager : MonoBehaviour {
         isMatchActive = true; // Sblocca i controlli
         hasBonusEventHappened = false;
 
+        //FAI PARTIRE L'AI ORA!
+        foreach (var p in players) {
+            if (p.IsAI) {
+                ThrowBallAI aiBall = p.GetComponentInChildren<ThrowBallAI>();
+                if (aiBall != null) aiBall.TakeTurn();
+            }
+        }
+
         StartCoroutine(BonusEventRoutine()); // Avvia il timer del bonus solo ora
         Debug.Log("Partita Iniziata!");
     }
@@ -203,15 +216,8 @@ public class GameManager : MonoBehaviour {
         }
     }
 
-    private void ShowFinalScores() {
-        Debug.Log("--- CLASSIFICA FINALE ---");
-        foreach (var p in players) {
-            Debug.Log($"{p.PlayerName}: {p.Score} punti");
-        }
-    }
-
     // 1. Metodo per assegnare SOLO i punti (chiamato dal sensore)
-    public void AwardPoints(Player shooter, ThrowBallDeterministic ball) {
+    public void AwardPoints(Player shooter, ThrowBall ball) {
         if (!isMatchActive) return;
 
         int points = 0;

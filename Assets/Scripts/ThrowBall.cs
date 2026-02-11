@@ -1,160 +1,112 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
+public abstract class ThrowBall : MonoBehaviour {
 
-public class ThrowBall : MonoBehaviour
-{
-    private PlayerControls controls;
-    private Rigidbody rb;
-    private Coroutine swipeTimerCoroutine;
-    private Vector3 initialBallPosition;
-    private Quaternion initialBallRotation;
+    protected Rigidbody ballRb;
+    protected Player myPlayer;
+    protected Vector3 initialBallLocalPosition;
+    protected Quaternion initialBallRotation;
 
-    private Vector2 startPos;
-    private bool isSwiping = false;
-
-    [Header("Throw Settings")]
-    [SerializeField] private float maxForce = 25f;
-    [SerializeField] private float maxSwipeDuration = 0.8f;
+    [Header("Target References")]
+    [SerializeField] protected Transform hoopTarget;
+    [SerializeField] protected Transform bankTarget;
+    [SerializeField] protected float timeOfFlight = 1.2f;
 
     [Header("Reset Settings")]
-    [SerializeField] private float yResetThreshold = 0f;
-    [SerializeField] private float maxLifeTime = 5f;
+    [SerializeField] protected float yResetThreshold = -1f;
 
-    [Header("Improved Sensivity")]
-    [SerializeField] private float verticalSensitivity = 25f;
-    [SerializeField] private float depthSensitivity = 30f;
-    [SerializeField] private float minSwipeDistancePercent = 0.05f; // Default is 5% of the screen
+    protected bool isLaunched = false;
+    protected bool pendingBankAssist = false;
+    protected bool perfectShot = false;
+    protected bool hitBonusBackboard = false;
+    protected int potentialBonusPoints = 0;
+    protected Vector3 finalTarget;
+    protected bool passedTopTrigger = false;
 
-    private bool isLaunched = false;
-    private Coroutine autoResetCoroutine;
+    protected virtual void Awake() {
+        myPlayer = GetComponentInParent<Player>();
+        ballRb = GetComponent<Rigidbody>();
+        ballRb.isKinematic = true;
 
-    private void Awake() {
-        rb = GetComponent<Rigidbody>();
-        rb.isKinematic = true;
-
-        controls = new PlayerControls();
-
-        //Subscrive to input events
-        controls.Gameplay.Click.started += ctx => StartSwipe();
-        controls.Gameplay.Click.canceled += ctx => EndSwipe();
-
-            
-        initialBallPosition = transform.position;
+        initialBallLocalPosition = transform.localPosition;
         initialBallRotation = transform.rotation;
     }
 
-    private void OnEnable() => controls.Enable();
-    private void OnDisable() => controls.Disable();
-
-    private void StartSwipe() {
-        //Avoid douple input
-        if (isSwiping) return;
-
-        isSwiping = true;
-
-        startPos = controls.Gameplay.Point.ReadValue<Vector2>();
-        swipeTimerCoroutine = StartCoroutine(SwipeTimer());
+    protected void ThrowTowardsTarget(Vector3 target) {
+        ballRb.isKinematic = false;
+        Vector3 velocity = CalculateVelocity(target, transform.position, timeOfFlight);
+        ballRb.velocity = velocity;
+        ballRb.AddTorque(transform.right * 5f, ForceMode.Impulse);
+        isLaunched = true;
     }
 
-    private void EndSwipe() {
+    protected Vector3 CalculateVelocity(Vector3 target, Vector3 origin, float time) {
+        Vector3 distanceXZ = target - origin;
+        distanceXZ.y = 0;
+        float sY = target.y - origin.y;
+        float sXZ = distanceXZ.magnitude;
 
-        if (!isSwiping) return;
+        float Vxz = sXZ / time;
+        float Vy = (sY / time) + (0.5f * Mathf.Abs(Physics.gravity.y) * time);
 
-        StopCoroutine(swipeTimerCoroutine);
-
-        Launch();
-
+        Vector3 result = distanceXZ.normalized * Vxz;
+        result.y = Vy;
+        return result;
     }
 
-    private IEnumerator SwipeTimer() {
-        yield return new WaitForSeconds(maxSwipeDuration);
+    protected virtual void OnCollisionEnter(Collision collision) {
+        if (collision.gameObject.CompareTag("Backboard")) {
+            BackboardBonus bonusScript = collision.gameObject.GetComponent<BackboardBonus>();
+            if (bonusScript != null && bonusScript.IsActive) {
+                hitBonusBackboard = true;
+                potentialBonusPoints = bonusScript.BonusPoints;
+            }
 
-        if (isSwiping) {
-            //Time's up, automatic launch
-            Launch();
+            if (pendingBankAssist) {
+                pendingBankAssist = false;
+                ballRb.velocity = Vector3.zero;
+                ballRb.angularVelocity = Vector3.zero;
+
+                Vector3 assistVelocity = CalculateVelocity(hoopTarget.position, transform.position, 0.4f);
+                ballRb.velocity = assistVelocity;
+                ballRb.AddTorque(transform.right * 2f, ForceMode.Impulse);
+            }
         }
     }
-    void Update() {
-        // 1. Controllo Altezza: se la palla è stata lanciata e scende sotto la soglia
+
+    // Controllo caduta della palla
+    protected virtual void Update() {
         if (isLaunched && transform.position.y <= yResetThreshold) {
             ResetBall();
-        }
-    }
-    private void Launch() {
-        isSwiping = false;
-
-        Vector2 currentPos = controls.Gameplay.Point.ReadValue<Vector2>();
-        Vector2 swipeDelta = currentPos - startPos;
-
-        // 1. NORMALIZZAZIONE VERTICALE (Percentuale dell'altezza schermo)
-        // Questo garantisce che la forza sia la stessa su ogni risoluzione
-        float normY = swipeDelta.y / Screen.height;
-
-        // 2. DEADZONE E FILTRO DIREZIONE
-        // Se lo swipe è verso il basso (negativo) o troppo corto (< 5% dello schermo)
-        if (normY < minSwipeDistancePercent) {
-            ResetBallState();
-            return;
-        }
-
-        // 3. CALCOLO FORZA DRITTA
-        // X è sempre 0 per evitare curve
-        float forceX = 0f;
-        float forceY = normY * verticalSensitivity; // Altezza della parabola
-        float forceZ = normY * depthSensitivity;    // Spinta verso il canestro
-
-        Vector3 finalForce = new Vector3(forceX, forceY, forceZ);
-
-        // Clamp per evitare che swipe estremi sparino la palla fuori campo
-        finalForce = Vector3.ClampMagnitude(finalForce, maxForce);
-
-        // 4. APPLICAZIONE FISICA
-        rb.isKinematic = false;
-        rb.AddForce(finalForce, ForceMode.Impulse);
-
-        // Effetto visivo di rotazione proporzionale allo swipe
-        rb.AddTorque(transform.right * (normY * 15f), ForceMode.Impulse);
-
-        OnBallLaunched();
-    }
-
-    private void ResetBallState() {
-        rb.isKinematic = true;
-        isSwiping = false;
-    }
-    private IEnumerator ResetTimer() {
-        yield return new WaitForSeconds(maxLifeTime);
-        if (isLaunched) {
-            ResetBall();
+            GameManager.Instance.OnShotFinished(myPlayer);
         }
     }
 
-    public void OnBallLaunched() {
-        isLaunched = true;
-
-        // 2. Controllo Tempo: Avviamo il timer per il reset forzato
-        if (autoResetCoroutine != null) StopCoroutine(autoResetCoroutine);
-        autoResetCoroutine = StartCoroutine(ResetTimer());
-    }
-
-    public void ResetBall() {
-        // Fermiamo il timer se il reset avviene prima del tempo (es. per la Y)
-        if (autoResetCoroutine != null) StopCoroutine(autoResetCoroutine);
-
+    public virtual void ResetBall() {
         isLaunched = false;
+        perfectShot = false;
+        hitBonusBackboard = false;
+        passedTopTrigger = false;
+        potentialBonusPoints = 0;
 
-        // Reset Fisico
-        rb.isKinematic = true;
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
+        ballRb.isKinematic = true;
+        ballRb.velocity = Vector3.zero;
+        ballRb.angularVelocity = Vector3.zero;
 
-        // Reset Trasformata
-        transform.position = initialBallPosition;
+        transform.localPosition = initialBallLocalPosition;
         transform.rotation = initialBallRotation;
-
-        Debug.Log("Palla resettata!");
     }
+
+    public void setPassedTopTrigger(bool passedTopTrigger) {
+        this.passedTopTrigger = passedTopTrigger;
+    }
+
+    public bool getPassedTopTrigger() {
+        return passedTopTrigger;
+    }
+
+    // Getters comuni
+    public bool getIsShotPerfect() => perfectShot;
+    public bool DidHitBonusBoard() => hitBonusBackboard;
+    public int GetBonusPointsValue() => potentialBonusPoints;
 }

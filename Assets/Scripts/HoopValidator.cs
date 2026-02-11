@@ -11,7 +11,7 @@ public class HoopValidator : MonoBehaviour {
         if (!other.CompareTag(ballTag)) return;
 
         // 2. Recupero lo script di tiro direttamente dalla palla
-        ThrowBallDeterministic ball = other.GetComponent<ThrowBallDeterministic>();
+        ThrowBall ball = other.GetComponent<ThrowBall>();
 
         if (ball != null) {
             // LOGICA TRIGGER SUPERIORE
