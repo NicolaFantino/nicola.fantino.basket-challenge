@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public abstract class ThrowBall : MonoBehaviour {
 
@@ -14,6 +14,10 @@ public abstract class ThrowBall : MonoBehaviour {
 
     [Header("Reset Settings")]
     [SerializeField] protected float yResetThreshold = -1f;
+
+    [Header("Debug Settings")]
+    [SerializeField] protected bool showDebugArcs = true;
+    [SerializeField] protected int arcResolution = 20;
 
     protected bool isLaunched = false;
     protected bool pendingBankAssist = false;
@@ -109,4 +113,45 @@ public abstract class ThrowBall : MonoBehaviour {
     public bool getIsShotPerfect() => perfectShot;
     public bool DidHitBonusBoard() => hitBonusBackboard;
     public int GetBonusPointsValue() => potentialBonusPoints;
+
+    private void OnDrawGizmos() {
+        if (!showDebugArcs || hoopTarget == null || bankTarget == null) return;
+
+        // Disegniamo l'arco per il tiro perfetto (Verde)
+        //DrawTrajectoryArc(hoopTarget.position, Color.green);
+
+        // Disegniamo l'arco per il tabellone (Giallo)
+        //DrawTrajectoryArc(bankTarget.position, Color.yellow);
+
+        // 2. Arco del TIRO ATTUALE (Il finalTarget calcolato)
+        // Lo disegniamo solo se � stato calcolato almeno una volta
+        if (finalTarget != Vector3.zero) {
+            Gizmos.color = Color.red;
+
+            // Disegna l'arco effettivo
+            DrawTrajectoryArc(finalTarget, Color.red);
+        }
+    }
+
+    private void DrawTrajectoryArc(Vector3 target, Color color) {
+        Gizmos.color = color;
+        Vector3 lastPoint = transform.position;
+
+        // Calcoliamo la velocit� iniziale che userebbe il sistema
+        Vector3 velocity = CalculateVelocity(target, transform.position, timeOfFlight);
+
+        for (int i = 1; i <= arcResolution; i++) {
+            // Calcola il tempo trascorso per questo segmento
+            float t = (i / (float)arcResolution) * timeOfFlight;
+
+            // Formula del moto uniformemente accelerato: P = P0 + V0*t + 0.5*g*t^2
+            Vector3 nextPoint = transform.position + velocity * t + 0.5f * Physics.gravity * Mathf.Pow(t, 2);
+
+            Gizmos.DrawLine(lastPoint, nextPoint);
+            lastPoint = nextPoint;
+        }
+
+        // Disegna una piccola sfera sul target finale
+        Gizmos.DrawWireSphere(target, 0.1f);
+    }
 }
