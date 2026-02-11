@@ -135,6 +135,18 @@ public class GameManager : MonoBehaviour {
             }
             EndMatch();
         }
+
+        if (GameplayUI.Instance != null) {
+            foreach (Player p in players) {
+                if (p.IsOnFire) {
+                   
+                    // Calcola quanto manca (es. 5s rimasti su 10s totali = 0.5f)
+                    float percentage = p.FireTimer / p.fireDuration;
+
+                    GameplayUI.Instance.UpdateFireBar(percentage, p, true);
+                }
+            }
+        }
     }
 
     private IEnumerator BonusEventRoutine() {
@@ -220,6 +232,8 @@ public class GameManager : MonoBehaviour {
     public void AwardPoints(Player shooter, ThrowBall ball) {
         if (!isMatchActive) return;
 
+        shooter.ScoredThisTurn = true;
+
         int points = 0;
         bool isBonus = ball.DidHitBonusBoard();
         bool isPerfect = ball.getIsShotPerfect(); // Assicurati che questo metodo sia public in ThrowBall
@@ -230,42 +244,48 @@ public class GameManager : MonoBehaviour {
             points = isPerfect ? 3 : 2;
         }
 
+        if (shooter.IsOnFire) {
+            points *= 2;
+        }
+
         shooter.AddScore(points);
+        shooter.AddStreak();
         Debug.Log($"{shooter.PlayerName} ha segnato! Totale: {shooter.Score}");
 
         //AGGIORNAMENTO UI
         if (GameplayUI.Instance != null) {
-            // 1. Mostra il Popup (Solo se è il giocatore umano a segnare, opzionale)
+            // 1. Mostra il Popup e aggiorniamo la firebar (Solo se è il giocatore umano a segnare, opzionale)
             if (!shooter.IsAI) {
                 GameplayUI.Instance.SpawnScorePopup(points, isPerfect, isBonus);
             }
 
             // 2. Aggiorna il punteggio fisso in alto
-            // Assumiamo che il primo della lista sia il P1 (Umano)
-            bool isP1 = (players.IndexOf(shooter) == 0);
-            GameplayUI.Instance.UpdateScore(shooter.PlayerName, shooter.Score, isP1);
+            if (!shooter.IsOnFire) {
+                float percentage = (float)shooter.CurrentStreak / shooter.streakToFire;
+                GameplayUI.Instance.UpdateFireBar(percentage, shooter, false);
+            }
+            GameplayUI.Instance.UpdateScore(shooter.PlayerName, shooter.Score, shooter);
         }
     }
 
-    // Chiamato da ThrowBallDeterministic.cs
+    // Chiamato da ThrowBall.cs
     public void OnShotFinished(Player player) {
         // Se la partita è finita, non cambiamo più le posizioni
         if (!isMatchActive) return;
 
-        // Cerchiamo il giocatore che possiede questa palla
-       //Player shooter = players.Find(p => p.BallScript == ball);
-
         if (player != null) {
-            // 1. Spostiamo solo il giocatore interessato
-            /*if (positioner != null) {
-                positioner.MovePlayerToRandomPosition(player.transform);
-            }*/
+            // --- MECCANICA FIREBALL: CONTROLLO MISS ---
+            // Se la palla è caduta ma il flag è ancora falso... significa che ha padellato!
+            if (!player.ScoredThisTurn) {
+                player.ResetStreak();
+
+                // Aggiorna la UI per svuotare la barra
+                if (GameplayUI.Instance != null) {
+                    GameplayUI.Instance.UpdateFireBar(0,player, false);
+                }
+            }
+            player.ScoredThisTurn = false;
             SetupTurnForPlayer(player);
-
-            // 2. Resettiamo la palla
-            //shooter.BallScript.ResetBall();
-
-            //Debug.Log($"Timer: {Mathf.CeilToInt(currentTime)}s | {ballPlayer.Name} ha resettato. Score: {shooter.Score}");
         }
     }
 

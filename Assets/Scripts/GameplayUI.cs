@@ -27,6 +27,12 @@ public class GameplayUI : MonoBehaviour {
     [Header("Player 2 (Right)")]
     [SerializeField] private Image p2Avatar;
     [SerializeField] private TextMeshProUGUI p2ScoreText;
+
+    [Header("Firebars")]
+    [SerializeField] private Slider p1FireBar;
+    [SerializeField] private Slider p2FireBar;
+    [SerializeField] private Image p1FireBarFill; // L'immagine "Fill" dentro lo slider
+    [SerializeField] private Image p2FireBarFill;
     [SerializeField] private TextMeshProUGUI p2NameText;
 
     [Header("External")]
@@ -60,14 +66,14 @@ public class GameplayUI : MonoBehaviour {
         if (player1 != null) {
             if (p1Avatar != null) p1Avatar.sprite = player1.ProfileImage;
             if (p1NameText != null) p1NameText.text = player1.PlayerName;
-            UpdateScore(player1.PlayerName, 0, true);
+            UpdateScore(player1.PlayerName, 0, player1);
         }
 
         // Setup Player 2 (Destra)
         if (player2 != null) {
             if (p2Avatar != null) p2Avatar.sprite = player2.ProfileImage;
             if (p2NameText != null) p2NameText.text = player2.PlayerName;
-            UpdateScore(player2.PlayerName, 0, false);
+            UpdateScore(player2.PlayerName, 0, player2);
         }
     }
 
@@ -99,11 +105,11 @@ public class GameplayUI : MonoBehaviour {
         }
     }
 
-    public void UpdateScore(string playerName, int score, bool isPlayer1) {
-        // Esempio semplice: se è il Player 1 aggiorna il testo 1
-        if (isPlayer1 && p1ScoreText != null) {
+    public void UpdateScore(string playerName, int score, Player player) {
+        
+        if (!player.IsAI && p1ScoreText != null) {
             p1ScoreText.text = score.ToString();
-        } else if (!isPlayer1 && p2ScoreText != null) {
+        } else if (player.IsAI && p2ScoreText != null) {
             p2ScoreText.text = score.ToString();
         }
     }
@@ -139,6 +145,24 @@ public class GameplayUI : MonoBehaviour {
             // Effetto elastico semplice
             countdownText.transform.localScale = Vector3.Lerp(startScale, endScale, t);
             yield return null;
+        }
+    }
+
+    public void UpdateFireBar(float fillPercentage, Player player, bool isOnFire) {
+        Slider targetSlider = player.IsAI ? p2FireBar : p1FireBar;
+        Image targetFill = player.IsAI ? p2FireBarFill : p1FireBarFill;
+
+        if (targetSlider == null) return;
+
+        // Imposta la barra esattamente al valore passato
+        targetSlider.value = fillPercentage;
+
+        if (targetFill != null) {
+            if (isOnFire) {
+                targetFill.color = Color.red;
+            } else {
+                targetFill.color = new Color(1f, 0.5f, 0f); // Arancione normale
+            }
         }
     }
 
