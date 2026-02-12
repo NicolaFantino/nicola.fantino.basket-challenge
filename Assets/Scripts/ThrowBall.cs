@@ -93,9 +93,10 @@ public abstract class ThrowBall : MonoBehaviour {
         passedTopTrigger = false;
         potentialBonusPoints = 0;
 
-        ballRb.isKinematic = true;
+        
         ballRb.velocity = Vector3.zero;
         ballRb.angularVelocity = Vector3.zero;
+        ballRb.isKinematic = true;
 
         transform.localPosition = initialBallLocalPosition;
         transform.rotation = initialBallRotation;
