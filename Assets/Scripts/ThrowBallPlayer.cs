@@ -62,7 +62,7 @@ public class ThrowBallPlayer : ThrowBall {
     private void Launch() {
         isSwiping = false;
         float power = GetCurrentPower();
-
+        Debug.Log($"POWER: {power}");
         if (power < 0.1f) {
             ResetBall();
             return;
@@ -73,7 +73,7 @@ public class ThrowBallPlayer : ThrowBall {
             // TIRO PERFETTO
             finalTarget = hoopTarget.position;
             perfectShot = true;
-            Debug.Log("PERFECT SHOT!");
+            Debug.Log($"PERFECT SHOT!");
         } else if (power >= myPlayer.MinBankZone && power <= myPlayer.MaxBankZone) {
             // TIRO DI TABELLONE
             finalTarget = bankTarget.position;

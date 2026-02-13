@@ -86,20 +86,34 @@ public class GameManager : MonoBehaviour {
         // 1. Spostiamo il giocatore e otteniamo la distanza
         float distance = positioner.MovePlayerToRandomPosition(player.transform);
 
-        // 2. Calcoliamo la potenza ideale in base alla distanza (Mapping)
-        // Vicino (4m) -> Slider basso (0.25). Lontano (15m) -> Slider alto (0.85)
+        // Based on the distance, we calculate the ideal power for a perfect shot
         float normalizedDist = Mathf.InverseLerp(positioner.MinDistance, positioner.MaxDistance, distance);
-        float idealPower = Mathf.Lerp(0.25f, 0.85f, normalizedDist);
 
-        // 3. Calcoliamo i range (Min e Max) per le zone
-        float minPerfectZone = Mathf.Clamp(idealPower - (perfectZoneWidth / 2f), 0.1f, 0.9f);
-        float maxPerfectZone = Mathf.Clamp(idealPower + (perfectZoneWidth / 2f), 0.1f, 0.9f);
+        // 1. Definisci i margini di sicurezza (0.1 e 0.95 sono i limiti totali della barra)
+        float halfPerfectWidth = perfectZoneWidth / 2f;
+        float safeMinPower = 0.1f + halfPerfectWidth;
+        float safeMaxPower = 0.95f - halfPerfectWidth - bankZoneWidth - 0.05f; // Lasciamo spazio anche per il tabellone!
 
-        float minBankZone = Mathf.Clamp(maxPerfectZone + 0.05f, 0.1f, 0.95f); // Il Bank shot è un po' più forte
+        // 2. Calcola e CLAMPA l'idealPower PRIMA di creare le zone
+        float rawIdealPower = Mathf.Lerp(0.35f, 0.85f, normalizedDist); // Ho alzato leggermente il minimo per evitare tiri troppo mosci
+        float idealPower = Mathf.Clamp(rawIdealPower, safeMinPower, safeMaxPower);
+
+        // 3. Ora calcola le zone senza paura di sforare (o usando un Clamp molto più largo solo per sicurezza estrema)
+        float minPerfectZone = idealPower - halfPerfectWidth;
+        float maxPerfectZone = idealPower + halfPerfectWidth;
+
+        // 2. CORREZIONE QUI SOTTO:
+        // Permettiamo al Bank Zone di estendersi fino a 1.0f
+
+        // Assicuriamoci che la bank zone inizi al massimo a 0.90, così c'è spazio per disegnarla
+        float minBankZone = Mathf.Clamp(maxPerfectZone + 0.1f, 0.1f, 0.90f);
+
+        // ORA CAMBIARE QUESTO VALORE: Da 0.95f a 1.0f
         float maxBankZone = Mathf.Clamp(minBankZone + bankZoneWidth, 0.1f, 1.0f);
 
+        Debug.Log($"Perfect Zone: [{minPerfectZone:F2}, {maxPerfectZone:F2}] Bank Zone: [{minBankZone:F2}, {maxBankZone:F2}]");
         // Aggiorniamo i valori delle zone di tiro nel giocatore
-            player.SetThrowZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
+        player.SetThrowZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
 
         //Gestione UMANO vs AI
         if (!player.IsAI) {

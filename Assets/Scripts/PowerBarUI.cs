@@ -32,7 +32,7 @@ public class PowerBarUI : MonoBehaviour {
     }
 
     private void PositionSegment(RectTransform segment, float min, float max) {
-        // totalHeight in realtà è la larghezza (160) perché lo slider è "sdraiato"
+       
         float segmentLength = (max - min) * totalHeight;
         float xPos = min * totalHeight;
 
@@ -40,12 +40,12 @@ public class PowerBarUI : MonoBehaviour {
         // Manteniamo la Height (Y) originale del segmento (es. 20)
         segment.sizeDelta = new Vector2(segmentLength, segment.sizeDelta.y);
 
-        // Lo spostiamo lungo la X (che visivamente è la verticale grazie ai 90°)
+        //Position segment along x axis, that is vertically
         segment.anchoredPosition = new Vector2(xPos, 0);
     }
 
     public void UpdateUI(float power) {
-        powerSlider.value = power; // Aggiorna il fill e l'handle automaticamente
+        powerSlider.value = power;
     }
 
     public void ResetUI() {
