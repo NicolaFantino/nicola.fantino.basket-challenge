@@ -7,16 +7,15 @@ public class CameraFollowSwitcher : MonoBehaviour {
 
     [SerializeField] private CinemachineVirtualCamera mainCam;
 
-    // --- MEMORIA DELLO STATO INIZIALE ---
+    //Reference to the starting transform that the camera follows
     [SerializeField] private Transform originalFollowTarget;
 
-    // Body (Framing Transposer)
+    //Parameters for smooth transition to the ball or instant snap back to the player
     [SerializeField] private Vector3 originalBodyOffset;
     [SerializeField] private float origX_Damping;
     [SerializeField] private float origY_Damping;
     [SerializeField] private float origZ_Damping;
 
-    // Componenti Cinemachine
     private CinemachineFramingTransposer framingTransposer;
 
     private void Awake() {
@@ -27,26 +26,9 @@ public class CameraFollowSwitcher : MonoBehaviour {
         framingTransposer.m_XDamping = origX_Damping;
         framingTransposer.m_YDamping = origY_Damping;
         framingTransposer.m_ZDamping = origZ_Damping;
-
-        /*if (mainCam != null) {
-            originalFollowTarget = mainCam.Follow;
-
-            // 1. RECUPERO E SALVATAGGIO DATI BODY (Framing Transposer)
-            
-            if (framingTransposer != null) {
-                originalBodyOffset = framingTransposer.m_TrackedObjectOffset;
-
-                // Salviamo il damping originale (quello "morbido" per la palla)
-                origX_Damping = framingTransposer.m_XDamping;
-                origY_Damping = framingTransposer.m_YDamping;
-                origZ_Damping = framingTransposer.m_ZDamping;
-            }
-        }*/
     }
 
-    /// <summary>
-    /// Chiamato al LANCIO: Segue la palla con movimento FLUIDO
-    /// </summary>
+    //Called by the ThrowBallPlayer script when the ball is thrown
     public void SwitchToBall(Transform ballTransform) {
         if (mainCam == null) return;
 
@@ -65,21 +47,16 @@ public class CameraFollowSwitcher : MonoBehaviour {
         }
     }
 
-    /// <summary>
-    /// Chiamato al RESET: Torna al player con scatto ISTANTANEO
-    /// </summary>
+    //Called by the ThrowBallPlayer script when the ball is reset
     public void ResetToPlayer() {
         if (mainCam == null) return;
 
-        // 1. Torna al Player
         mainCam.Follow = originalFollowTarget;
 
-        // 2. Gestione Body
         if (framingTransposer != null) {
-            // Ripristina l'offset "sopra la spalla"
+
             framingTransposer.m_TrackedObjectOffset = originalBodyOffset;
 
-            // AZZERA il Damping (Scatto istantaneo sulla nuova posizione)
             framingTransposer.m_XDamping = 0f;
             framingTransposer.m_YDamping = 0f;
             framingTransposer.m_ZDamping = 0f;

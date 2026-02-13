@@ -23,10 +23,6 @@ public class PowerBarUI : MonoBehaviour {
     }
 
     public void SetupZones(float perferctMin, float perfectMax, float bankMin, float bankMax) {
-        // Se non è stato ancora assegnato in Awake
-        if (totalHeight <= 0) totalHeight = sliderRect.rect.width;
-
-        // Posizioniamo i segmenti
         PositionSegment(bankRect, bankMin, bankMax);
         PositionSegment(perfectRect, perferctMin, perfectMax);
     }
@@ -36,8 +32,7 @@ public class PowerBarUI : MonoBehaviour {
         float segmentLength = (max - min) * totalHeight;
         float xPos = min * totalHeight;
 
-        // Impostiamo la lunghezza (Width) del segmento lungo l'asse X dello slider
-        // Manteniamo la Height (Y) originale del segmento (es. 20)
+        // Set the length of the segment along the X axis of the slider
         segment.sizeDelta = new Vector2(segmentLength, segment.sizeDelta.y);
 
         //Position segment along x axis, that is vertically
@@ -49,7 +44,7 @@ public class PowerBarUI : MonoBehaviour {
     }
 
     public void ResetUI() {
-        powerSlider.value = 0; // Riporta l'handle alla base
+        powerSlider.value = 0;
     }
 
     public void SetVisible(bool isVisible) {

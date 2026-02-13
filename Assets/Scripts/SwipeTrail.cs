@@ -10,25 +10,20 @@ public class SwipeTrail : MonoBehaviour {
     [SerializeField] private float fadeTime = 0.5f;
 
     private LineRenderer lineRenderer;
-    private PlayerControls controls; // Riferimento alla classe generata
+    private PlayerControls controls;
 
     private Vector3 lastPointPosition;
     private Coroutine fadeCoroutine;
-    private bool isDrawing = false; // Flag per sapere se stiamo trascinando
+    private bool isDrawing = false;
 
     private void Awake() {
         lineRenderer = GetComponent<LineRenderer>();
         lineRenderer.useWorldSpace = true;
         lineRenderer.positionCount = 0;
 
-        // 1. Inizializziamo i controlli
         controls = new PlayerControls();
 
-        // 2. Iscrizione agli eventi (Come in ThrowBallDeterministic)
-        // Quando tocchi lo schermo -> Inizia la scia
         controls.Gameplay.Click.started += ctx => StartTrail();
-
-        // Quando alzi il dito -> Finisci la scia
         controls.Gameplay.Click.canceled += ctx => EndTrail();
     }
 
@@ -41,14 +36,12 @@ public class SwipeTrail : MonoBehaviour {
     }
 
     private void Update() {
-        // Se il flag è attivo, aggiorniamo la posizione della linea
         if (isDrawing) {
             UpdateTrail();
         }
     }
 
     private void StartTrail() {
-        // Opzionale: controlla se il gioco è in pausa o Game Over
         if (GameManager.Instance != null && !GameManager.Instance.IsMatchActive) return;
 
         if (fadeCoroutine != null) StopCoroutine(fadeCoroutine);
@@ -57,14 +50,12 @@ public class SwipeTrail : MonoBehaviour {
         lineRenderer.positionCount = 0;
         lineRenderer.enabled = true;
 
-        // Aggiungi subito il primo punto dove hai toccato
         AddPoint();
     }
 
     private void UpdateTrail() {
         Vector3 currentPoint = GetWorldPoint();
 
-        // Aggiungi un punto solo se ci siamo mossi abbastanza
         if (Vector3.Distance(currentPoint, lastPointPosition) > minDistanceBetweenPoints) {
             AddPoint();
         }
@@ -74,7 +65,6 @@ public class SwipeTrail : MonoBehaviour {
         if (!isDrawing) return;
 
         isDrawing = false;
-        // Avvia la sfumatura invece di spegnere di colpo
         fadeCoroutine = StartCoroutine(FadeOutTrail());
     }
 
@@ -87,12 +77,9 @@ public class SwipeTrail : MonoBehaviour {
         lastPointPosition = newPoint;
     }
 
-    // --- QUI CAMBIA LA LETTURA DELLA POSIZIONE ---
     private Vector3 GetWorldPoint() {
-        // Invece di Input.mousePosition, leggiamo dal New Input System
-        Vector2 inputPos = controls.Gameplay.Point.ReadValue<Vector2>();
 
-        // Convertiamo in Vector3 aggiungendo la profondità Z
+        Vector2 inputPos = controls.Gameplay.Point.ReadValue<Vector2>();
         Vector3 screenPos = new Vector3(inputPos.x, inputPos.y, distanceFromCamera);
 
         return Camera.main.ScreenToWorldPoint(screenPos);

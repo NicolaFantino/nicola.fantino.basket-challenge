@@ -78,7 +78,6 @@ public abstract class ThrowBall : MonoBehaviour {
         }
     }
 
-    // Controllo caduta della palla
     protected virtual void Update() {
         if (isLaunched && transform.position.y <= yResetThreshold) {
             ResetBall();
@@ -118,13 +117,13 @@ public abstract class ThrowBall : MonoBehaviour {
     private void OnDrawGizmos() {
         if (!showDebugArcs || hoopTarget == null || bankTarget == null) return;
 
-        // Disegniamo l'arco per il tiro perfetto (Verde)
+        // Disegniamo l'arco per il tiro perfetto
         //DrawTrajectoryArc(hoopTarget.position, Color.green);
 
-        // Disegniamo l'arco per il tabellone (Giallo)
+        // Disegniamo l'arco per il tabellone
         //DrawTrajectoryArc(bankTarget.position, Color.yellow);
 
-        // 2. Arco del TIRO ATTUALE (Il finalTarget calcolato)
+        // 2. Arco del TIRO ATTUALE
         // Lo disegniamo solo se � stato calcolato almeno una volta
         if (finalTarget != Vector3.zero) {
             Gizmos.color = Color.red;
@@ -138,21 +137,19 @@ public abstract class ThrowBall : MonoBehaviour {
         Gizmos.color = color;
         Vector3 lastPoint = transform.position;
 
-        // Calcoliamo la velocit� iniziale che userebbe il sistema
+        // Calcoliamo la velocità iniziale che userebbe il sistema
         Vector3 velocity = CalculateVelocity(target, transform.position, timeOfFlight);
 
         for (int i = 1; i <= arcResolution; i++) {
-            // Calcola il tempo trascorso per questo segmento
+
             float t = (i / (float)arcResolution) * timeOfFlight;
 
-            // Formula del moto uniformemente accelerato: P = P0 + V0*t + 0.5*g*t^2
             Vector3 nextPoint = transform.position + velocity * t + 0.5f * Physics.gravity * Mathf.Pow(t, 2);
 
             Gizmos.DrawLine(lastPoint, nextPoint);
             lastPoint = nextPoint;
         }
 
-        // Disegna una piccola sfera sul target finale
         Gizmos.DrawWireSphere(target, 0.1f);
     }
 }

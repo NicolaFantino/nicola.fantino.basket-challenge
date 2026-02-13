@@ -68,7 +68,6 @@ public class ThrowBallPlayer : ThrowBall {
             return;
         }
 
-        // LOGICA DELLE ZONE
         if (power >= myPlayer.MinPerfectZone && power <= myPlayer.MaxPerfectZone) {
             // TIRO PERFETTO
             finalTarget = hoopTarget.position;
@@ -81,16 +80,16 @@ public class ThrowBallPlayer : ThrowBall {
             Debug.Log("BANK SHOT!");
         } else {
             if (power < myPlayer.MinPerfectZone) {
-                // CASO A: TIRO CORTO (Air ball o colpisce la base della rete)
+                // CASO A: TIRO CORTO
                 // Usiamo InverseLerp per capire quanto siamo lontani dalla soglia minima
                 float shortScale = Mathf.InverseLerp(0.1f, myPlayer.MinPerfectZone, power);
-                float zOffset = Mathf.Lerp(-2.5f, -0.6f, shortScale); // Da molto corto a vicino al ferro
+                float zOffset = Mathf.Lerp(-2.5f, -0.6f, shortScale);
                 float yOffset = Mathf.Lerp(-1.0f, -0.2f, shortScale);
 
                 finalTarget = hoopTarget.position + new Vector3(0, yOffset, zOffset);
                 Debug.Log("MISS: Tiro troppo debole.");
             } else if (power > myPlayer.MaxBankZone) {
-                // CASO B: TIRO LUNGO (Sbatte alto sul tabellone o vola oltre)
+                // CASO B: TIRO LUNGO
                 float longScale = Mathf.InverseLerp(myPlayer.MaxBankZone, 1.0f, power);
                 float zOffset = Mathf.Lerp(0.6f, 3.0f, longScale);
                 float yOffset = Mathf.Lerp(0.5f, 1.5f, longScale);
@@ -98,15 +97,13 @@ public class ThrowBallPlayer : ThrowBall {
                 finalTarget = hoopTarget.position + new Vector3(0, yOffset, zOffset);
                 Debug.Log("MISS: Tiro troppo forte.");
             } else {
-                // CASO C: "THE GAP" (Tra Bank e Perfect)
-                // Colpisce il ferro e rimbalza fuori. Spostiamo il target leggermente a lato.
+                // CASO C: Gap tra perfect e bank
                 float sideOffset = (Random.value > 0.5f) ? 0.35f : -0.35f;
                 finalTarget = hoopTarget.position + new Vector3(sideOffset, 0, -0.2f);
                 Debug.Log("MISS: Quasi... colpito il ferro!");
             }
         }
 
-        // Usa il metodo del padre per lanciare fisicamente
         ThrowTowardsTarget(finalTarget);
 
         if (CameraFollowSwitcher.Instance != null) {
@@ -116,7 +113,7 @@ public class ThrowBallPlayer : ThrowBall {
 
     // Override dell'Update per aggiungere l'aggiornamento della UI
     protected override void Update() {
-        base.Update(); // Fallo cadere come fa il padre
+        base.Update();
 
         if (isSwiping && powerBarUI != null) {
             powerBarUI.UpdateUI(GetCurrentPower());

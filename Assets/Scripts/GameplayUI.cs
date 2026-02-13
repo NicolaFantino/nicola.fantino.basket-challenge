@@ -14,7 +14,7 @@ public class GameplayUI : MonoBehaviour {
 
     [Header("Popups")]
     [SerializeField] private ScorePopup scorePopupPrefab;
-    [SerializeField] private Transform popupSpawnPoint; // Dove appaiono i punti (es. centro-alto)
+    [SerializeField] private Transform popupSpawnPoint;
 
     [Header("HUD References")]
     [SerializeField] private TextMeshProUGUI timerText;
@@ -31,12 +31,12 @@ public class GameplayUI : MonoBehaviour {
     [Header("Firebars")]
     [SerializeField] private Slider p1FireBar;
     [SerializeField] private Slider p2FireBar;
-    [SerializeField] private Image p1FireBarFill; // L'immagine "Fill" dentro lo slider
+    [SerializeField] private Image p1FireBarFill;
     [SerializeField] private Image p2FireBarFill;
     [SerializeField] private TextMeshProUGUI p2NameText;
 
     [Header("External")]
-    [SerializeField] private PowerBarUI powerBar; // Riferimento alla tua barra esistente
+    [SerializeField] private PowerBarUI powerBar;
 
     [Header("--- GAME OVER SCREEN ---")]
     [SerializeField] private GameObject gameOverPanel;
@@ -49,8 +49,8 @@ public class GameplayUI : MonoBehaviour {
     [SerializeField] private TextMeshProUGUI finalScoreP2Text;
 
     [Header("Rewards")]
-    [SerializeField] private TextMeshProUGUI trophyText; // "+25"
-    [SerializeField] private TextMeshProUGUI moneyText;  // "+100"
+    [SerializeField] private TextMeshProUGUI trophyText;
+    [SerializeField] private TextMeshProUGUI moneyText;
     [SerializeField] private GameObject trophyIcon;
 
     [Header("Images")]
@@ -77,26 +77,22 @@ public class GameplayUI : MonoBehaviour {
         }
     }
 
-    // --- METODI PER I POPUP ---
     public void SpawnScorePopup(int points, bool isPerfect, bool isBonus) {
         if (scorePopupPrefab != null && popupSpawnPoint != null) {
-            // Istanziamo il prefab dentro il Canvas
+
             ScorePopup popup = Instantiate(scorePopupPrefab, popupSpawnPoint.position, Quaternion.identity, transform);
             popup.Setup(points, isPerfect, isBonus);
         }
     }
 
-    // --- METODI PER L'HUD ---
     public void UpdateTimer(float timeRemaining) {
         if (timerText != null) {
             // Converte i secondi in minuti:secondi
             float minutes = Mathf.FloorToInt(timeRemaining / 60);
             float seconds = Mathf.FloorToInt(timeRemaining % 60);
 
-            // Formatta la stringa (es. "01:00" o "00:09")
             timerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
 
-            // Colore rosso se mancano meno di 10 secondi
             if (timeRemaining <= 10 && timeRemaining > 0) {
                 timerText.color = Color.red;
             } else {
@@ -114,9 +110,6 @@ public class GameplayUI : MonoBehaviour {
         }
     }
 
-    /// <summary>
-    /// Mostra un testo (es. "3", "2", "GO!") con un effetto punch
-    /// </summary>
     public void UpdateCountdownText(string text) {
         if (countdownText == null) return;
 
@@ -136,13 +129,12 @@ public class GameplayUI : MonoBehaviour {
         float duration = 0.5f;
         float timer = 0f;
 
-        Vector3 startScale = Vector3.one * 0.5f; // Parte piccolo
-        Vector3 endScale = Vector3.one * 1.2f;   // Diventa grande
+        Vector3 startScale = Vector3.one * 0.5f;
+        Vector3 endScale = Vector3.one * 1.2f;
 
         while (timer < duration) {
             timer += Time.deltaTime;
             float t = timer / duration;
-            // Effetto elastico semplice
             countdownText.transform.localScale = Vector3.Lerp(startScale, endScale, t);
             yield return null;
         }
@@ -154,14 +146,13 @@ public class GameplayUI : MonoBehaviour {
 
         if (targetSlider == null) return;
 
-        // Imposta la barra esattamente al valore passato
         targetSlider.value = fillPercentage;
 
         if (targetFill != null) {
             if (isOnFire) {
                 targetFill.color = Color.red;
             } else {
-                targetFill.color = new Color(1f, 0.5f, 0f); // Arancione normale
+                targetFill.color = new Color(1f, 0.5f, 0f);
             }
         }
     }
@@ -210,19 +201,15 @@ public class GameplayUI : MonoBehaviour {
         moneyText.text = $"+{moneyEarned} Monete";
     }
 
-    // --- FUNZIONI PER I BOTTONI ---
-
     public void OnRestartClicked() {
-        // Ricarica la scena corrente
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
     public void OnQuitClicked() {
-        Debug.Log("Uscita dal gioco.");
+        //Debug.Log("Uscita dal gioco.");
         Application.Quit();
     }
 
-    // Wrapper per la PowerBar (così il GameManager parla solo con GameplayUI)
     public PowerBarUI GetPowerBar() {
         return powerBar;
     }

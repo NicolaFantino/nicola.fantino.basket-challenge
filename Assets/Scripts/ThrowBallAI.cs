@@ -12,9 +12,6 @@ public class ThrowBallAI : ThrowBall {
     [SerializeField] private float perfectChance = 0.4f;
     [SerializeField] private float bankChance = 0.2f;
 
-    // Non serve un Awake personalizzato, usa quello del padre in automatico
-    // Non serve un Update personalizzato, usa quello del padre per la caduta
-
     public void TakeTurn() {
         if (!GameManager.Instance.IsMatchActive) return;
         StartCoroutine(AiShotRoutine());
@@ -25,8 +22,6 @@ public class ThrowBallAI : ThrowBall {
         yield return new WaitForSeconds(thinkTime);
 
         DecideShotOutcome();
-
-        // Usa il metodo del padre!
         ThrowTowardsTarget(finalTarget);
     }
 

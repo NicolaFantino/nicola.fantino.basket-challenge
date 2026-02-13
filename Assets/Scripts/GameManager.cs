@@ -8,7 +8,6 @@ public class GameManager : MonoBehaviour {
     [Header("References")]
     [SerializeField] private List<Player> players = new List<Player>();
     [SerializeField] private PlayerPositioner positioner;
-    //[SerializeField] private PowerBarUI powerBarUI;
 
     [Header("Difficulty Settings")]
     [SerializeField] private float perfectZoneWidth = 0.15f;
@@ -16,13 +15,13 @@ public class GameManager : MonoBehaviour {
    
 
     [Header("Match Settings")]
-    [SerializeField] private float matchDuration = 60f; // Durata in secondi (es. 1 minuto)
+    [SerializeField] private float matchDuration = 60f;
     private float currentTime;
     private bool isMatchActive = false;
 
     [Header("Bonus Event Settings")]
-    [SerializeField] private BackboardBonus backboardScript; // Trascina qui il tabellone
-    [SerializeField] private float bonusDuration = 10f; // Quanto dura la luce accesa
+    [SerializeField] private BackboardBonus backboardScript;
+    [SerializeField] private float bonusDuration = 10f;
     private bool hasBonusEventHappened = false;
 
     private void Awake() {
@@ -32,98 +31,121 @@ public class GameManager : MonoBehaviour {
 
     private void Start() {
         StartCoroutine(StartMatchCountdown());
-        //StartMatch();
-        //StartCoroutine(BonusEventRoutine());
 
-        // Posizioniamo tutti i giocatori all'inizio
+        // Place players in their initial positions
         foreach (var p in players) {
             SetupTurnForPlayer(p);
         }
 
-        // --- NUOVO: Setup della grafica (Avatar e Nomi) ---
+        //Setup gameplay UI
         if (GameplayUI.Instance != null && players.Count >= 2) {
-            // Assumiamo players[0] = Tu, players[1] = Avversario
             GameplayUI.Instance.SetupHUD(players[0], players[1]);
         }
     }
 
-    // --- NUOVA LOGICA DI START ---
     private IEnumerator StartMatchCountdown() {
-        isMatchActive = false; // Blocchiamo tutto all'inizio
-        Debug.Log("Countdown Iniziato...");
+        isMatchActive = false;
+        //Debug.Log("Countdown Iniziato...");
 
         if (GameplayUI.Instance != null) {
-            // 3
+           
             GameplayUI.Instance.UpdateCountdownText("3");
             yield return new WaitForSeconds(1f);
 
-            // 2
             GameplayUI.Instance.UpdateCountdownText("2");
             yield return new WaitForSeconds(1f);
 
-            // 1
             GameplayUI.Instance.UpdateCountdownText("1");
             yield return new WaitForSeconds(1f);
 
-            // GO!
             GameplayUI.Instance.UpdateCountdownText("GO!");
-            yield return new WaitForSeconds(0.5f); // Il GO dura meno
+            yield return new WaitForSeconds(0.5f);
 
             GameplayUI.Instance.HideCountdown();
-        } else {
-            // Fallback se non c'è UI, aspettiamo comunque
-            yield return new WaitForSeconds(3f);
         }
-
-        // ORA inizia davvero la partita
         StartMatch();
     }
 
-    // --- NUOVO METODO CENTRALE PER GESTIRE IL TURNO ---
+    private void StartMatch() {
+        currentTime = matchDuration;
+        isMatchActive = true;
+        hasBonusEventHappened = false;
+
+        foreach (var p in players) {
+            if (p.IsAI) {
+                ThrowBallAI aiBall = p.GetComponentInChildren<ThrowBallAI>();
+                if (aiBall != null) aiBall.TakeTurn();
+            }
+        }
+
+        StartCoroutine(BonusEventRoutine());
+        //Debug.Log("Partita Iniziata!");
+    }
+
+    private void EndMatch() {
+        isMatchActive = false;
+        Debug.Log("PARTITA FINITA!");
+
+        Player p1 = players[0];
+        Player p2 = players[1];
+
+        bool isWin = p1.Score > p2.Score;
+        bool isDraw = p1.Score == p2.Score;
+
+        int trophiesChange = 0;
+        int moneyEarned = 0;
+
+        if (isWin) {
+            trophiesChange = 25;
+            moneyEarned = 100;  
+        } else if (isDraw) {
+            trophiesChange = 0;
+            moneyEarned = 20;
+        } else {
+            trophiesChange = -20;
+            moneyEarned = 10;
+        }
+
+        if (GameplayUI.Instance != null) {
+            GameplayUI.Instance.ShowGameOver(isWin, p1, p2, trophiesChange, moneyEarned);
+        }
+    }
+
     private void SetupTurnForPlayer(Player player) {
         if (positioner == null || player == null) return;
 
-        // 1. Spostiamo il giocatore e otteniamo la distanza
         float distance = positioner.MovePlayerToRandomPosition(player.transform);
 
         // Based on the distance, we calculate the ideal power for a perfect shot
         float normalizedDist = Mathf.InverseLerp(positioner.MinDistance, positioner.MaxDistance, distance);
 
-        // 1. Definisci i margini di sicurezza (0.1 e 0.95 sono i limiti totali della barra)
+        //Definiamo i margini di sicurezza per evitare che le zone escano dallo slider
         float halfPerfectWidth = perfectZoneWidth / 2f;
         float safeMinPower = 0.1f + halfPerfectWidth;
-        float safeMaxPower = 0.95f - halfPerfectWidth - bankZoneWidth - 0.05f; // Lasciamo spazio anche per il tabellone!
+        float safeMaxPower = 0.95f - halfPerfectWidth - bankZoneWidth - 0.05f;
 
-        // 2. Calcola e CLAMPA l'idealPower PRIMA di creare le zone
-        float rawIdealPower = Mathf.Lerp(0.35f, 0.85f, normalizedDist); // Ho alzato leggermente il minimo per evitare tiri troppo mosci
+        //Calcola e clampa l'idealPower prima di creare le zone
+        float rawIdealPower = Mathf.Lerp(0.35f, 0.85f, normalizedDist);
         float idealPower = Mathf.Clamp(rawIdealPower, safeMinPower, safeMaxPower);
 
-        // 3. Ora calcola le zone senza paura di sforare (o usando un Clamp molto più largo solo per sicurezza estrema)
         float minPerfectZone = idealPower - halfPerfectWidth;
         float maxPerfectZone = idealPower + halfPerfectWidth;
-
-        // 2. CORREZIONE QUI SOTTO:
-        // Permettiamo al Bank Zone di estendersi fino a 1.0f
 
         // Assicuriamoci che la bank zone inizi al massimo a 0.90, così c'è spazio per disegnarla
         float minBankZone = Mathf.Clamp(maxPerfectZone + 0.1f, 0.1f, 0.90f);
 
-        // ORA CAMBIARE QUESTO VALORE: Da 0.95f a 1.0f
         float maxBankZone = Mathf.Clamp(minBankZone + bankZoneWidth, 0.1f, 1.0f);
 
-        Debug.Log($"Perfect Zone: [{minPerfectZone:F2}, {maxPerfectZone:F2}] Bank Zone: [{minBankZone:F2}, {maxBankZone:F2}]");
-        // Aggiorniamo i valori delle zone di tiro nel giocatore
+        //Debug.Log($"Perfect Zone: [{minPerfectZone:F2}, {maxPerfectZone:F2}] Bank Zone: [{minBankZone:F2}, {maxBankZone:F2}]");
+
+        //Update player throw zones values
         player.SetThrowZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
 
-        //Gestione UMANO vs AI
         if (!player.IsAI) {
-            // UMANO: Aggiorna la UI (La palla aspetterà l'input del dito)
             if (GameplayUI.Instance.GetPowerBar() != null) {
                 GameplayUI.Instance.GetPowerBar().SetupZones(minPerfectZone, maxPerfectZone, minBankZone, maxBankZone);
             }
         } else {
-            //AI: Fai partire il timer per il prossimo tiro ---
-            // Solo se la partita è attiva (evita che tiri mentre c'è Game Over o Countdown)
             if (isMatchActive) {
                 ThrowBallAI aiBall = player.GetComponentInChildren<ThrowBallAI>();
                 if (aiBall != null) aiBall.TakeTurn();
@@ -134,7 +156,7 @@ public class GameManager : MonoBehaviour {
     private void Update() {
         if (!isMatchActive) return;
 
-        // Gestione del countdown
+        //Match conuntdown
         if (currentTime > 0) {
             currentTime -= Time.deltaTime;
 
@@ -150,11 +172,11 @@ public class GameManager : MonoBehaviour {
             EndMatch();
         }
 
+        //Fireball Timer Update
         if (GameplayUI.Instance != null) {
             foreach (Player p in players) {
                 if (p.IsOnFire) {
                    
-                    // Calcola quanto manca (es. 5s rimasti su 10s totali = 0.5f)
                     float percentage = p.FireTimer / p.fireDuration;
 
                     GameplayUI.Instance.UpdateFireBar(percentage, p, true);
@@ -164,7 +186,7 @@ public class GameManager : MonoBehaviour {
     }
 
     private IEnumerator BonusEventRoutine() {
-        // Aspetta un tempo casuale tra 10s e (DurataPartita - 10s)
+        //Wait a random time to trigger the bonus event
         float randomWait = Random.Range(10f, matchDuration - 15f);
         yield return new WaitForSeconds(randomWait);
 
@@ -176,13 +198,11 @@ public class GameManager : MonoBehaviour {
     private void TriggerBonusEvent() {
         hasBonusEventHappened = true;
 
-        // Scegliamo a caso tra 4, 6 o 8
         int[] options = { 4, 6, 8 };
         int randomPoints = options[Random.Range(0, options.Length)];
 
         if (backboardScript != null) {
             backboardScript.ActivateBonus(randomPoints);
-            // Spegni dopo tot secondi
             StartCoroutine(DeactivateBonusAfterTime());
         }
     }
@@ -192,57 +212,6 @@ public class GameManager : MonoBehaviour {
         if (backboardScript != null) backboardScript.DeactivateBonus();
     }
 
-    private void StartMatch() {
-        currentTime = matchDuration;
-        isMatchActive = true; // Sblocca i controlli
-        hasBonusEventHappened = false;
-
-        //FAI PARTIRE L'AI ORA!
-        foreach (var p in players) {
-            if (p.IsAI) {
-                ThrowBallAI aiBall = p.GetComponentInChildren<ThrowBallAI>();
-                if (aiBall != null) aiBall.TakeTurn();
-            }
-        }
-
-        StartCoroutine(BonusEventRoutine()); // Avvia il timer del bonus solo ora
-        Debug.Log("Partita Iniziata!");
-    }
-
-    private void EndMatch() {
-        isMatchActive = false;
-        Debug.Log("PARTITA FINITA!");
-
-        // 1. Recupera i giocatori (assumiamo P1 = Umano, P2 = AI)
-        Player p1 = players[0];
-        Player p2 = players[1];
-
-        // 2. Determina Vincitore
-        bool isWin = p1.Score > p2.Score;
-        bool isDraw = p1.Score == p2.Score;
-
-        // 3. Calcola Ricompense (Logica simulata)
-        int trophiesChange = 0;
-        int moneyEarned = 0;
-
-        if (isWin) {
-            trophiesChange = 25;  // Hai vinto 25 coppe
-            moneyEarned = 100;    // Hai guadagnato 100 monete
-        } else if (isDraw) {
-            trophiesChange = 0;
-            moneyEarned = 20;
-        } else {
-            trophiesChange = -20; // Hai perso 20 coppe
-            moneyEarned = 10;     // Consolazione
-        }
-
-        // 4. Chiama la UI
-        if (GameplayUI.Instance != null) {
-            GameplayUI.Instance.ShowGameOver(isWin, p1, p2, trophiesChange, moneyEarned);
-        }
-    }
-
-    // 1. Metodo per assegnare SOLO i punti (chiamato dal sensore)
     public void AwardPoints(Player shooter, ThrowBall ball) {
         if (!isMatchActive) return;
 
@@ -250,7 +219,7 @@ public class GameManager : MonoBehaviour {
 
         int points = 0;
         bool isBonus = ball.DidHitBonusBoard();
-        bool isPerfect = ball.getIsShotPerfect(); // Assicurati che questo metodo sia public in ThrowBall
+        bool isPerfect = ball.getIsShotPerfect();
 
         if (isBonus) {
             points = ball.GetBonusPointsValue();
@@ -264,16 +233,14 @@ public class GameManager : MonoBehaviour {
 
         shooter.AddScore(points);
         shooter.AddStreak();
-        Debug.Log($"{shooter.PlayerName} ha segnato! Totale: {shooter.Score}");
+        //Debug.Log($"{shooter.PlayerName} ha segnato! Totale: {shooter.Score}");
 
-        //AGGIORNAMENTO UI
         if (GameplayUI.Instance != null) {
-            // 1. Mostra il Popup e aggiorniamo la firebar (Solo se è il giocatore umano a segnare, opzionale)
+
             if (!shooter.IsAI) {
                 GameplayUI.Instance.SpawnScorePopup(points, isPerfect, isBonus);
             }
 
-            // 2. Aggiorna il punteggio fisso in alto
             if (!shooter.IsOnFire) {
                 float percentage = (float)shooter.CurrentStreak / shooter.streakToFire;
                 GameplayUI.Instance.UpdateFireBar(percentage, shooter, false);
@@ -282,18 +249,15 @@ public class GameManager : MonoBehaviour {
         }
     }
 
-    // Chiamato da ThrowBall.cs
+    //Method called by ThrowBall
     public void OnShotFinished(Player player) {
-        // Se la partita è finita, non cambiamo più le posizioni
         if (!isMatchActive) return;
 
         if (player != null) {
-            // --- MECCANICA FIREBALL: CONTROLLO MISS ---
-            // Se la palla è caduta ma il flag è ancora falso... significa che ha padellato!
             if (!player.ScoredThisTurn) {
                 player.ResetStreak();
 
-                // Aggiorna la UI per svuotare la barra
+                //Empty the fire bar if the player missed
                 if (GameplayUI.Instance != null) {
                     GameplayUI.Instance.UpdateFireBar(0,player, false);
                 }
